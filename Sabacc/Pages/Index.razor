@@ -62,8 +62,17 @@ else
 
         if (session is not null)
         {
-            session.JoinSession(await _browserStorage.GetPlayerId());
-            _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+            var playerId = await _browserStorage.GetPlayerId();
+
+            if (session.PlayerIds.Contains(playerId))
+            {
+                _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+            }
+            else
+            {
+                session.JoinSession(playerId);
+                _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+            }
         }
     }
 }

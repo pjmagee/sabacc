@@ -37,7 +37,7 @@ namespace Sabacc.Services
             return Sessions.Exists(session => session.Id.Equals(sessionId) && session.PlayerIds.Contains(playerId));
         }
 
-        public async Task<PlayerView> GetPlayerView(Guid sessionId, Guid playerId)
+        public async Task<PlayerViewModel> GetPlayerView(Guid sessionId, Guid playerId)
         {
             var session = Sessions.Find(session => session.Id == sessionId && session.PlayerIds.Contains(playerId))!;
             return session.GetPlayerView(playerId);

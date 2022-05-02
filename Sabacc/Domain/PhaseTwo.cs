@@ -2,8 +2,12 @@
 
 public class PhaseTwo
 {
-    public bool? CallTheBet { get; set; }
-    public bool? RaiseTheBet { get; set; }
-    public bool? Fold { get; set; }
-    public decimal? Credits { get; set; }
+    public bool Completed { get; set; }
+    public bool Call { get; set; }
+    public bool Raise { get; set; }
+    public bool Junk { get; set; }
+    public bool Check { get; set; }
+    public bool Bet { get; set; }
+
+    public int Credits { get; set; }
 }

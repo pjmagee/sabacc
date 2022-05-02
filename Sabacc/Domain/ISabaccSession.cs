@@ -18,7 +18,7 @@ public interface ISabaccSession
     void JoinSession(Guid playerId);
     void LeaveSession(Guid playerId);
 
-    PlayerView GetPlayerView(Guid playerId);
+    PlayerViewModel GetPlayerView(Guid playerId);
     SpectatorView GetSpectateView();
     void PlayerTurn(PlayerAction playerAction);
 }

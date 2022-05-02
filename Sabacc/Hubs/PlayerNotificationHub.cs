@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Sabacc.Domain;
 
 namespace Sabacc.Hubs
 {
-    public class UpdateHub : Hub
+    public class PlayerNotificationHub : Hub
     {
         public const string Method = "Update";
     }

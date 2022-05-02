@@ -13,25 +13,31 @@
     <ValidationSummary />
 
     <div class="row mb-3">
-        <div class="mb-3">
+        <div class="mb-3 col-2">
             <label class="form-label">
                 Total players
             </label>
-            <InputNumber class="form-control" id="name" @bind-Value="form.Slots" />
+            <InputSelect class="form-control" id="name" @bind-Value="form.Slots">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+            </InputSelect>
         </div>
     </div>
 
     <div class="row mb-3">
-        <div class="mb-3">
-            <div class="col-auto">
-                <label class="form-label">
+        <div class="mb-3 col-4">
+            <label class="form-label">
                     Variant
                 </label>
                 <InputSelect id="variant" @bind-Value="form.SabaccVariant" TValue="SabaccVariantType" class="form-select">
                     <option value="@SabaccVariantType.CorellianSpikeBlackSpireOutpostRules">Corellian Spike (Blackspire Outpost rules)</option>
                     <option value="@SabaccVariantType.ClassicSabaccCloudCityRules" disabled="disabled">Classic Sabacc (Cloud city rules)</option>
                 </InputSelect>
-            </div>
         </div>
     </div>
 

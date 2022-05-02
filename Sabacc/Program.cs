@@ -11,7 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor(options =>
+builder.Services
+    .AddServerSideBlazor(options =>
     {
         options.DetailedErrors = true;
     })
@@ -33,11 +34,13 @@ builder.Services.AddResponseCompression(options =>
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/octet-stream" });
 });
 builder.Services.AddScoped<BrowserStorage>();
+
 builder.Services.AddSingleton<SabaccSessionFactory>();
 builder.Services.AddSingleton<SabaccSessionService>();
-builder.Services.AddSingleton<IServiceProvider>(provider => provider);
+builder.Services.AddSingleton(provider => provider);
 builder.Services.AddTransient<ClassicSabaccCloudCityRules>();
 builder.Services.AddTransient<CorellianSpikeBlackSpireOutpostRules>();
+
 
 var app = builder.Build();
 
@@ -51,6 +54,6 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.MapBlazorHub();
-app.MapHub<UpdateHub>("/update");
+app.MapHub<PlayerNotificationHub>("/update");
 app.MapFallbackToPage("/_Host");
 app.Run();

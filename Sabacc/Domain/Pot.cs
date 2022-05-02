@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.Eventing.Reader;
-
-namespace Sabacc.Domain;
+﻿namespace Sabacc.Domain;
 
 public class Pot
 {

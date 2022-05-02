@@ -8,7 +8,6 @@ namespace Sabacc.Domain;
 
 public class ClassicSabaccCloudCityRules : ISabaccSession
 {
-    private readonly IHubContext<UpdateHub> _hubContext;
     public Guid Id { get; }
     public int Slots { get; }
     public int Round { get; }
@@ -16,9 +15,9 @@ public class ClassicSabaccCloudCityRules : ISabaccSession
     public SabaccVariantType VariantType { get; }
     public SessionStatus Status { get; }
 
-    public ClassicSabaccCloudCityRules(IHubContext<UpdateHub> hubContext)
+    public ClassicSabaccCloudCityRules()
     {
-        _hubContext = hubContext;
+
     }
 
     public void SetSlots(int slots)
@@ -36,7 +35,7 @@ public class ClassicSabaccCloudCityRules : ISabaccSession
         throw new NotImplementedException();
     }
 
-    public PlayerView GetPlayerView(Guid playerId)
+    public PlayerViewModel GetPlayerView(Guid playerId)
     {
         throw new NotImplementedException();
     }
