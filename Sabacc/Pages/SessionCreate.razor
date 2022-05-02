@@ -1,0 +1,51 @@
+﻿@page "/sessions/create"
+@using Sabacc.Domain
+@inject NavigationManager _navigationManager
+@inject SabaccSessionService _sabaccSessionService
+@inject BrowserStorage _browserStorage
+
+<PageTitle>Create</PageTitle>
+
+<h1>Create Session</h1>
+
+<EditForm Model="@form" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row mb-3">
+        <div class="mb-3">
+            <label class="form-label">
+                Total players
+            </label>
+            <InputNumber class="form-control" id="name" @bind-Value="form.Slots" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="mb-3">
+            <div class="col-auto">
+                <label class="form-label">
+                    Variant
+                </label>
+                <InputSelect id="variant" @bind-Value="form.SabaccVariant" TValue="SabaccVariantType" class="form-select">
+                    <option value="@SabaccVariantType.CorellianSpikeBlackSpireOutpostRules">Corellian Spike (Blackspire Outpost rules)</option>
+                    <option value="@SabaccVariantType.ClassicSabaccCloudCityRules" disabled="disabled">Classic Sabacc (Cloud city rules)</option>
+                </InputSelect>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+
+    private CreateSessionForm form = new();
+
+    private async Task HandleValidSubmit()
+    {
+        var playerId = await _browserStorage.GetPlayerId();
+        var session = await _sabaccSessionService.Create(playerId, form);
+        _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+    }
+}

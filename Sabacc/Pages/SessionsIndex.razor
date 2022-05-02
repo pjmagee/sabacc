@@ -1,0 +1,69 @@
+﻿@page "/sessions"
+@using Sabacc.Domain
+@inject NavigationManager _navigationManager
+@inject SabaccSessionService _sabaccSessionService
+@inject BrowserStorage _browserStorage
+
+<PageTitle>Sessions</PageTitle>
+
+<h1>Sessions</h1>
+
+@if (_sessions is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Status</th>
+                <th>Players</th>
+                <th>Variant</th>
+                <th>
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var session in _sessions)
+            {
+                <tr>
+                    <td>@session.SessionId</td>
+                    <td>@session.SessionStatus</td>
+                    <td>@session.Players / @session.Slots</td>
+                    <td>@session.VariantType</td>
+                    <td>
+                        @if (session.SessionStatus == SessionStatus.Open)
+                        {
+                            <button class="btn btn-primary ms-1" @onclick="(MouseEventArgs e) => Join(session.SessionId)">Join</button>
+                        }
+                        <a href="/sessions/@session.SessionId" class="btn btn-secondary ms-1">Spectate</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private IEnumerable<SabaccSessionListItem>? _sessions = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sessions = await _sabaccSessionService.GetSessions();
+    }
+
+    public async Task Join(Guid sessionId)
+    {
+        var session = _sabaccSessionService.Sessions.Find(session => session.Id == sessionId);
+
+        if (session is not null)
+        {
+            session.JoinSession(await _browserStorage.GetPlayerId());
+            _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+        }
+    }
+}

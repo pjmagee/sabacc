@@ -1,0 +1,399 @@
+﻿@page "/sessions/{SessionId:guid}/player"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Sabacc.Domain
+@using Sabacc.Hubs
+
+<PageTitle>Player</PageTitle>
+@inject SabaccSessionService _sabaccSessionService
+@inject BrowserStorage _browserStorage
+@inject NavigationManager _navigationManager
+
+@if (PlayerView is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h4>Players</h4>
+    <table class="table table-responsive table-sm mb-4">
+        <thead>
+            <tr>
+                <th>Turn</th>
+                <th>Dealer</th>
+                <th>Player</th>
+                <th>Cards</th>
+                <th>Credits</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var hiddenPlayer in PlayerView.Hidden)
+            {
+                <tr class="@(hiddenPlayer.IsTurn ? "table-success" : string.Empty)">
+                    <td>@(hiddenPlayer.IsTurn ? "➡️" : string.Empty)</td>
+                    <td>@(hiddenPlayer.IsDealer ? "➡️" : string.Empty)</td>
+                    <td>@hiddenPlayer.Id</td>
+                    <td>@hiddenPlayer.Cards</td>
+                    <td>@hiddenPlayer.Credits</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4>Decks</h4>
+
+    <table class="table table-responsive mb-4">
+        <thead>
+            <tr>
+                <th>Deck</th>
+                <th>Cards</th>
+                <th>Top Card</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var deck in PlayerView.Decks)
+            {
+                <tr>
+                    <td>@deck.Name</td>
+                    <td>@deck.Total</td>
+                    <td>@(deck.TopCard ?? string.Empty)</td>
+                    <td>
+                        @if (deck.DeckType == DeckType.Draw && PlayerView.Me.MyTurn)
+                        {
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @if (PlayerView.Me.TurnState.Phase == Phase.Choose && !PlayerView.Me.TurnState.PhaseOne.Gain1DrawnCardId.HasValue)
+                                {
+                                    <tr>
+                                        <td>
+                                            <button class="btn btn-primary" @onclick="e => GainOption1()">Gain Option 1</button>
+                                        </td>
+                                        <td>
+                                            Take the top card from the draw pile. You may keep it or discard it.
+                                        </td>
+
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4>Pots</h4>
+    <table class="table table-responsive mb-4">
+        <thead>
+            <tr>
+                <th>Pot</th>
+                <th>Sum</th>
+                <th>Contributions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pot in PlayerView.Pots)
+            {
+                <tr>
+                    <td>@(pot.PotType == PotType.TheHand ? "Hand Pot" : "Sabacc Pot")</td>
+                    <td>@pot.Total</td>
+                    <th>
+                        @if (pot.Contributions.Any())
+                        {
+                            <table class="table table-responsive table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Player</th>
+                                        <th>Credits</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var contribution in pot.Contributions)
+                                    {
+                                        <tr>
+                                            <td>@contribution.Key</td>
+                                            <td>@contribution.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4>Cards</h4>
+    <table class="table table-responsive mb-4">
+        <thead>
+            <tr>
+                <th>Value</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!PlayerView.Me.Hand.Any())
+            {
+                <tr class="">
+                    <td colspan="2">
+                        You have no cards
+                    </td>
+                </tr>
+            }
+            else
+            {
+                foreach (var card in PlayerView.Me.Hand)
+                {
+                    <tr>
+                        <td>@card.ToString()</td>
+                        <td>
+                            @if (PlayerView.Me.MyTurn)
+                            {
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        @if (!PlayerView.Me.TurnState.PhaseOne.Gain1DrawnCardId.HasValue)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-primary" @onclick="(e => Swap(card.Id))">Swap</button>
+                                                </td>
+                                                <td>Swaps the top card from the discard pile with this card.</td>
+                                            </tr>
+                                        }
+
+                                        @if (card.Id == PlayerView.Me.TurnState.PhaseOne.Gain1DrawnCardId)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-primary" @onclick="(e => GainOption1Keep(card.Id))">Keep</button>
+                                                </td>
+                                                <td>Keep the card that was drawn.</td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-primary" @onclick="(e => GainOption1Discard(card.Id))">Discard</button>
+                                                </td>
+                                                <td>Discard the card that was drawn.</td>
+                                            </tr>
+                                        }
+                                        else if(!PlayerView.Me.TurnState.PhaseOne.Gain1DrawnCardId.HasValue)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-primary" @onclick="(e => GainOption2(card.Id))">Gain Option 2</button>
+                                                </td>
+                                                <td>Discard this card from your hand, then take the top card from the main deck.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+
+        </tbody>
+    </table>
+
+    <h4>Choices</h4>
+    <table class="table table-sm mb-4">
+        <thead>
+            <tr>
+                <th>Choice</th>
+                <th>Cost</th>
+                <th>Description</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <tr>
+                <td>Stand</td>
+                <td>0 cr</td>
+                <td>Retain your hand and end your turn.</td>
+                <td>
+                    @if (PlayerView.Me.TurnState.MyTurn)
+                    {
+                        <button class="btn btn-primary" @onclick="(e => Stand())">Stand</button>
+                    }
+                </td>
+            </tr>
+            <tr>
+                <td>Swap</td>
+                <td>2 cr to hand pot</td>
+                <td>Take the top card from the discard pile and add it to your hand, then discard a different card from your hand.</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Gain - Option 1</td>
+                <td>1 cr to hand Pot</td>
+                <td>Draw the top card from the main deck. You may keep it or discard it</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Gain - Option 2</td>
+                <td>1 cr to hand pot</td>
+                <td>Discard a card from your hand, draw the top card from the main deck.</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private HubConnection? hubConnection;
+
+    private PlayerView? PlayerView = null;
+
+    [Parameter]
+    public Guid SessionId { get; set; }
+
+    public Guid PlayerId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(_navigationManager.ToAbsoluteUri("/update"))
+            .Build();
+
+        hubConnection.On<Guid>(UpdateHub.Method, (sessionId) =>
+        {
+            if (sessionId.Equals(SessionId))
+            {
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task Stand()
+    {
+        PlayerView!.Me.TurnState.PhaseOne.Choice = PhaseOneChoice.Stand;
+
+        var action = new PlayerAction()
+            {
+                PlayerId = PlayerId,
+                SessionId = SessionId,
+                PhaseOne = PlayerView.Me.TurnState.PhaseOne
+            };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            PlayerId = await _browserStorage.GetPlayerId();
+
+            if (_sabaccSessionService.IsValidPlayer(SessionId, PlayerId))
+            {
+                PlayerView = await _sabaccSessionService.GetPlayerView(SessionId, PlayerId);
+                StateHasChanged();
+            }
+            else
+            {
+                _navigationManager.NavigateTo($"/sessions/{SessionId}");
+            }
+        }
+    }
+
+    private async Task GainOption2(Guid cardId)
+    {
+        PlayerView!.Me.TurnState.PhaseOne.Choice = PhaseOneChoice.Gain2;
+        PlayerView!.Me.TurnState.PhaseOne.Gain2Discard = cardId;
+
+        var action = new PlayerAction
+            {
+                PlayerId = PlayerId,
+                SessionId = SessionId,
+                PhaseOne = PlayerView.Me.TurnState.PhaseOne,
+                Phase = Phase.Choose
+            };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    private async Task GainOption1()
+    {
+        PlayerView!.Me.TurnState.PhaseOne.Choice = PhaseOneChoice.Gain1;
+        PlayerView!.Me.TurnState.PhaseOne.Gain1DrawnCardId = null;
+
+        var action = new PlayerAction()
+            {
+                PlayerId = PlayerId,
+                SessionId = SessionId,
+                PhaseOne = PlayerView.Me.TurnState.PhaseOne,
+                Phase = Phase.Choose
+            };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    private async Task GainOption1Discard(Guid cardId)
+    {
+        PlayerView!.Me.TurnState.PhaseOne.Choice = PhaseOneChoice.Gain1;
+        PlayerView!.Me.TurnState.PhaseOne.Gain1DiscardCardId = cardId;
+
+        var action = new PlayerAction
+            {
+                PlayerId = PlayerId,
+                SessionId = SessionId,
+                PhaseOne = PlayerView.Me.TurnState.PhaseOne,
+                Phase = Phase.Choose
+            };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    private async Task GainOption1Keep(Guid cardId)
+    {
+        PlayerView!.Me.TurnState.PhaseOne.Choice = PhaseOneChoice.Gain1;
+        PlayerView!.Me.TurnState.PhaseOne.Gain1KeepCardId = cardId;
+
+        var action = new PlayerAction
+            {
+                PlayerId = PlayerId,
+                SessionId = SessionId,
+                PhaseOne = PlayerView.Me.TurnState.PhaseOne,
+                Phase = Phase.Choose
+            };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    private async Task Swap(Guid cardId)
+    {
+        PlayerView!.Me.TurnState.PhaseOne.Choice = PhaseOneChoice.Swap;
+        PlayerView!.Me.TurnState.PhaseOne.SwapCardId = cardId;
+
+        var action = new PlayerAction
+            {
+                PlayerId = PlayerId,
+                SessionId = SessionId,
+                PhaseOne = PlayerView.Me.TurnState.PhaseOne,
+                Phase = Phase.Choose
+            };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+}

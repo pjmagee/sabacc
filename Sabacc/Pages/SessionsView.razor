@@ -1,0 +1,83 @@
+﻿@page "/sessions/{SessionId:guid}"
+@using Sabacc.Domain
+@inject SabaccSessionService _sabaccSessionService
+
+<PageTitle>Spectating</PageTitle>
+
+<h1>Spectating</h1>
+
+@if (_spectatorView is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <caption>Pot Amounts</caption>
+        <thead>
+            <tr>
+                <th>Pot</th>
+                <th>Sum</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>MainDeck Hand Pot</td>
+                <td>5 credits</td>
+            </tr>
+            <tr>
+                <td>Sabacc Pot</td>
+                <td>150 credits</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="table">
+        <caption>Disruptor Field</caption>
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Card</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Player 1</td>
+                <td>The Idiot</td>
+                <td>0</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="table">
+        <caption>Players</caption>
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Cards</th>
+                <th>Round 1 Card Sum</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Player 1</td>
+                <td>5</td>
+                <td>6</td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+@code {
+
+    [Parameter]
+    public Guid SessionId { get; set; }
+
+    private SpectatorView? _spectatorView = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _spectatorView = await _sabaccSessionService.GetSpectatorView(SessionId);
+    }
+}

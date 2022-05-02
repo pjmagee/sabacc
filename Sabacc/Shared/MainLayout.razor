@@ -1,0 +1,37 @@
+﻿@using Sabacc.Services
+@inject BrowserStorage _browserStorage
+@inherits LayoutComponentBase
+
+<PageTitle>Sabacc</PageTitle>
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4">
+            <div class="alert alert-info">
+                PlayerId: @(PlayerId)
+            </div>
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+
+    public Guid PlayerId { get; set; } = Guid.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        PlayerId = await _browserStorage.GetPlayerId();
+        StateHasChanged();
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}
