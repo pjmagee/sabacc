@@ -8,16 +8,23 @@
 
 <h1>Create Session</h1>
 
-<EditForm Model="@form" OnValidSubmit="@HandleValidSubmit">
+<EditForm Model="form" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
     <div class="row mb-3">
-        <div class="mb-3 col-2">
+        <div class="mb-3 col-1">
+            <label class="form-label">Your name</label>
+            <InputText class="form-control" id="name" @bind-Value="form.PlayerName" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="mb-3 col-1">
             <label class="form-label">
                 Total players
             </label>
-            <InputSelect class="form-control" id="name" @bind-Value="form.Slots">
+            <InputSelect class="form-control" id="players" @bind-Value="form.Slots">
                 <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4</option>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections;
+using System.Collections.Immutable;
 
 using Microsoft.AspNetCore.SignalR;
 
@@ -8,15 +9,22 @@ namespace Sabacc.Domain;
 
 public enum Phase
 {
-    Choose,
-    Bet,
-    SpikeDice
+    One,
+    Two,
+    Three
+}
+
+public class Scorer
+{
+    public Player ComputeWinner(List<Player> players)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 {
     private readonly IHubContext<PlayerNotificationHub> _playerNotifier;
-    private readonly Dictionary<Guid, PlayerAction> _playerActionstates;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public Player? CurrentPlayer => Players.CurrentTurn?.ValueRef;
@@ -32,12 +40,12 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     public Deck DiscardPile { get; set; } = new();
     public Pot HandPot { get; set; } = new(PotType.TheHand);
     public Pot SabaccPot { get; set; } = new(PotType.TrueSabacc);
+    public Dice SpikeDice { get; set; } = new();
     public SessionStatus Status { get; private set; } = SessionStatus.Open;
 
     public CorellianSpikeBlackSpireOutpostRules(IHubContext<PlayerNotificationHub> playerNotifier)
     {
         _playerNotifier = playerNotifier;
-        _playerActionstates = new Dictionary<Guid, PlayerAction>();
     }
 
     public void SetSlots(int slots)
@@ -48,41 +56,57 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         Slots = slots;
     }
 
-    public void JoinSession(Guid playerId)
+    public async Task JoinSession(Guid id, string name)
     {
-        if (Status != SessionStatus.Open || PlayerIds.Contains(playerId))
+        if (Status != SessionStatus.Open || PlayerIds.Contains(id))
             throw new InvalidOperationException("You cannot join the session.");
 
-        Players.Join(playerId);
+        Players.Join(id, name);
 
         if (Players.Count == Slots)
             Start();
 
-        _playerActionstates[playerId] = new PlayerAction { PlayerId = playerId, SessionId = Id };
-        NotifyAsync();
+        await NotifyAsync().ConfigureAwait(false);
     }
 
-    private async Task NotifyAsync() => _playerNotifier.Clients.All.SendAsync(PlayerNotificationHub.Method, Id);
+    private async Task NotifyAsync() => await _playerNotifier.Clients.All.SendAsync(PlayerNotificationHub.Method, Id);
 
-    public void LeaveSession(Guid playerId)
+    public async Task LeaveSession(Guid playerId)
     {
-        Players.Leave(playerId);
-        _playerActionstates.Remove(playerId);
-        NotifyAsync();
+        var player = Players.SingleOrDefault(p => p.Id == playerId);
+
+        if (player is not null)
+            Players.Leave(playerId);
+
+        await NotifyAsync().ConfigureAwait(false);
     }
 
-    private PlayerAction GetActionState(Guid playerId)
+    private PlayerState GetNextState(Player player)
     {
-        var actionState = _playerActionstates[playerId];
-        actionState.MyTurn = CurrentPlayer?.Id.Equals(playerId) == true;
-        actionState.Phase = actionState.Phase switch
+
+
+        player.State.MyTurn = player.Equals(CurrentPlayer);
+
+        List<PlayerState> states = Players.Select(p => p.State).ToList();
+
+        player.State.Phase = player.State.Phase switch
         {
-            Phase.Choose => _playerActionstates.Values.All(player => player.PhaseOne.Completed) ? Phase.Bet : Phase.Choose,
-            Phase.Bet => _playerActionstates.Values.All(player => player.PhaseTwo.Completed) ? Phase.SpikeDice : Phase.Bet,
-            Phase.SpikeDice => Phase.Choose // TODO
+            Phase.One => states.All(p => p.PhaseOne.Completed) ? Phase.Two : Phase.One,
+            Phase.Two => states.All(p => p.PhaseTwo.Completed) ? Phase.Three : Phase.Two,
+            Phase.Three => states.All(p => p.PhaseThree.Completed) ? Phase.One : Phase.Three
         };
 
-        return actionState;
+        if (player.State.Phase == Phase.Three)
+        {
+            player.State.MyTurn = true; // No particular order for Acknowledge Loss/Win Actions
+        }
+
+        if (player.State.Phase == Phase.Two)
+        {
+            player.State.PhaseTwo.NoBets = !states.Any(s => s.PhaseTwo.Choice is PhaseTwoChoice.Bet or PhaseTwoChoice.Raise);
+        }
+
+        return player.State;
     }
 
     public PlayerViewModel GetPlayerView(Guid playerId)
@@ -91,54 +115,34 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         {
             _semaphore.Wait();
 
-            var player = Players.Find(Players.Single(p => p.Id == playerId))!;
+            Player me = Players.Single(p => p.Id == playerId);
 
-            var me = new Me
+            List<PlayerPublicView> players = new List<PlayerPublicView>();
+
+            foreach (Player player in Players)
             {
-                Id = player.Value.Id,
-                Credits = player.Value.Credits,
-                Hand = player.Value.Hand,
-                ActionState = GetActionState(playerId)
-            };
-
-            List<HiddenPlayer> hiddenPlayers = new List<HiddenPlayer>();
-
-            foreach (var hiddenPlayer in Players)
-            {
-                hiddenPlayers.Add(new HiddenPlayer
+                players.Add(new()
                 {
-                    Id = hiddenPlayer.Id,
-                    Credits = hiddenPlayer.Credits,
-                    Cards = hiddenPlayer.Hand.Count,
-                    IsTurn = CurrentPlayer == hiddenPlayer,
-                    IsDealer = CurrentDealer == hiddenPlayer
+                    Player = player,
+                    IsTurn = player.Equals(CurrentPlayer),
+                    IsDealer = player.Equals(CurrentDealer)
                 });
             }
 
             var view = new PlayerViewModel()
             {
-                Decks = new List<DeckView>(new[]
+                Decks = GetDeckViews(),
+                CurrentPlayer = Players.CurrentTurn?.ValueRef,
+                CurrentDealer = Players.CurrentDealer?.ValueRef,
+                SpikeDice = SpikeDice,
+                Me = new Me()
                 {
-                    new DeckView
-                    {
-                        Name = "Main deck",
-                        TopCard = null,
-                        Total = MainDeck.Cards.Count,
-                        DeckType = DeckType.Draw
-                    },
-                    new DeckView
-                    {
-                        Name = "Discard Pile",
-                        TopCard = DiscardPile.ViewTop()?.ToString() ?? "None",
-                        Total = DiscardPile.Cards.Count,
-                        DeckType = DeckType.Discard
-                    }
-                }),
-                PlayersTurn = Players.CurrentTurn?.Value.Id,
-                CurrentDealer = Players.CurrentDealer?.Value.Id,
-                Me = me,
-                Players = hiddenPlayers,
-                Pots = new List<Pot>(new[] { HandPot, SabaccPot })
+                    Player = me,
+                    State = GetNextState(me)
+                },
+                Players = players,
+                Pots = new List<Pot>(new[] { HandPot, SabaccPot }),
+                Round = Round
             };
 
             return view;
@@ -149,119 +153,216 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
+    private List<DeckView> GetDeckViews()
+    {
+        return new List<DeckView>(new[]
+        {
+            new DeckView
+            {
+                Name = "Main deck",
+                TopCard = null,
+                Total = MainDeck.Cards.Count,
+                DeckType = DeckType.Draw
+            },
+            new DeckView
+            {
+                Name = "Discard Pile",
+                TopCard = DiscardPile.ViewTop()?.ToString() ?? "None",
+                Total = DiscardPile.Cards.Count,
+                DeckType = DeckType.Discard
+            }
+        });
+    }
+
     public SpectatorView GetSpectateView()
     {
         return new SpectatorView();
     }
 
-    public void PlayerTurn(PlayerAction playerAction)
+    public async Task PlayerTurn(Guid playerId, PlayerState action)
     {
-        if (playerAction.Phase == Phase.Choose)
-        {
-            HandlePhaseOne(playerAction);
-        }
-        else if (playerAction.Phase == Phase.Bet)
-        {
-            HandlePhaseTwo(playerAction);
-        }
-        else if (playerAction.Phase == Phase.SpikeDice)
-        {
+        Player player = Players.Single(p => p.Id == playerId);
 
+        switch (action.Phase)
+        {
+            case Phase.One: HandlePhaseOne(player, action); break;
+            case Phase.Two: HandlePhaseTwo(player, action); break;
+            case Phase.Three: HandlePhaseThree(player, action); break;
         }
 
-        NotifyAsync();
+        await NotifyAsync().ConfigureAwait(false);
     }
 
-    private void HandlePhaseOne(PlayerAction playerAction)
+    private void HandlePhaseThree(Player player, PlayerState action)
     {
-        if (playerAction.IsStand())
+        if (action.PhaseThree.Choice == PhaseThreeChoice.DealerRoll)
         {
-            _playerActionstates[playerAction.PlayerId].PhaseOne.Completed = true;
+            SpikeDice.Roll();
 
-            NextTurn();
+            player.State.PhaseThree.Choice = PhaseThreeChoice.DealerRoll;
+            player.State.PhaseThree.Result = SpikeDice.Sides;
+            player.State.PhaseThree.IsSabaccShift = SpikeDice.IsSabaccShift();
+
+            if (SpikeDice.IsSabaccShift())
+            {
+                // Oh boyyyyyyyyyyyyyyy
+            }
+            else
+            {
+                // Calculate who won
+
+            }
         }
-        else if (playerAction.IsSwap())
+        else if (action.PhaseThree.Choice == PhaseThreeChoice.ClaimWin)
         {
-            CurrentPlayer!.Ante(HandPot, 2);
-            Card card = CurrentPlayer.Hand.Find(f => f.Id == playerAction.PhaseOne.SwapCardId)!;
-            CurrentPlayer.Hand.Remove(card);
-            CurrentPlayer.Hand.Add(DiscardPile.TakeTop());
+            // Player claim pot amounts
+            // Clear appropriate Pots (Sabacc, Hand or Both)
+            // Cards back to Main deck
+        }
+        else if (action.PhaseThree.Choice == PhaseThreeChoice.AcknowledgeLoss)
+        {
+            // Cards back to Main deck
+        }
+
+    }
+
+    private void HandlePhaseOne(Player player, PlayerState action)
+    {
+        if (action.IsStand())
+        {
+            player.State.PhaseOne.Completed = true;
+            player.State.PhaseOne.Choice = PhaseOneChoice.Stand;
+
+            SetNextTurn();
+        }
+        else if (action.IsSwap())
+        {
+            player.PlaceCredits(HandPot, 2);
+
+            Card card = player.Hand.Find(f => f.Id == action.PhaseOne.SwapCardId)!;
+
+            player.Hand.Remove(card);
+            player.Hand.Add(DiscardPile.TakeTop());
             DiscardPile.Cards.Push(card);
 
-            _playerActionstates[playerAction.PlayerId].PhaseOne.Completed = true;
+            player.State.PhaseOne.Completed = true;
+            player.State.PhaseOne.Choice = PhaseOneChoice.Swap;
 
-            NextTurn();
+            SetNextTurn();
         }
-        else if (playerAction.IsGain1())
+        else if (action.IsGain1())
         {
-            if (playerAction.PhaseOne.Gain1ShouldDraw())
+            if (action.PhaseOne.Gain1ShouldDraw())
             {
-                CurrentPlayer!.Ante(HandPot, credits: 1);
                 Card card = MainDeck.TakeTop();
-                _playerActionstates[playerAction.PlayerId].PhaseOne.Gain1DrawnCardId = card.Id;
-                CurrentPlayer.Hand.Add(card);
+
+                player.PlaceCredits(HandPot, credits: 1);
+                player.Hand.Add(card);
+                player.State.PhaseOne.Gain1DrawnCardId = card.Id;
             }
-            else if (playerAction.PhaseOne.Gain1DiscardCardId.HasValue)
+            else if (action.PhaseOne.Gain1DiscardCardId.HasValue)
             {
-                Card card = CurrentPlayer!.Hand.Find(card => card.Id == playerAction.PhaseOne.Gain1DiscardCardId)!;
-                CurrentPlayer.Hand.Remove(card);
+                Card card = player.Hand.Find(card => card.Id == action.PhaseOne.Gain1DiscardCardId)!;
+
+                player.Hand.Remove(card);
                 DiscardPile.Cards.Push(card);
-                _playerActionstates[playerAction.PlayerId].PhaseOne.Completed = true;
 
-                NextTurn();
+                player.State.PhaseOne.Completed = true;
+                player.State.PhaseOne.Choice = PhaseOneChoice.Gain1;
+
+                SetNextTurn();
             }
-            else if (playerAction.PhaseOne.Gain1KeepCardId.HasValue)
+            else if (action.PhaseOne.Gain1KeepCardId.HasValue)
             {
-                _playerActionstates[playerAction.PlayerId].PhaseOne.Completed = true;
+                player.State.PhaseOne.Completed = true;
+                player.State.PhaseOne.Choice = PhaseOneChoice.Gain1;
 
-                NextTurn();
+                SetNextTurn();
             }
         }
-        else if (playerAction.IsGain2())
+        else if (action.IsGain2())
         {
-            Card card = CurrentPlayer!.Hand.Find(card => card.Id == playerAction.PhaseOne.Gain2Discard.Value)!;
-            CurrentPlayer.Hand.Remove(card);
+            Card card = player.Hand.Find(card => card.Id == action.PhaseOne.Gain2Discard.Value)!;
+            player.Hand.Remove(card);
             DiscardPile.Cards.Push(card);
-            CurrentPlayer.Hand.Add(MainDeck.TakeTop());
-            _playerActionstates[playerAction.PlayerId].PhaseOne.Completed = true;
-            _playerActionstates[playerAction.PlayerId].PhaseOne.Choice = PhaseOneChoice.Gain2;
-            NextTurn();
+            player.Hand.Add(MainDeck.TakeTop());
+            player.State.PhaseOne.Completed = true;
+            player.State.PhaseOne.Choice = PhaseOneChoice.Gain2;
+
+            SetNextTurn();
         }
     }
 
-    private void HandlePhaseTwo(PlayerAction playerAction)
+    private void HandlePhaseTwo(Player player, PlayerState action)
     {
-        // This can only be done if no bet has been made yet.
-        // If a bet is made (all must call or raise)
-        if (playerAction.PhaseTwo.Check)
+        if (action.PhaseTwo.Choice == PhaseTwoChoice.Check)
         {
-
+            player.State.PhaseTwo.Choice = PhaseTwoChoice.Check;
+            player.State.PhaseTwo.Completed = true;
+            SetNextTurn();
         }
-        // The player adds a bet to the Hand pot
-        // All other players must add the same amount OR (Raise the but or Junk out)
-
-        else if (playerAction.PhaseTwo.Bet)
+        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Bet)
         {
+            player.State.PhaseTwo.Choice = PhaseTwoChoice.Bet;
+            player.State.PhaseTwo.Credits = action.PhaseTwo.Credits;
+            player.State.PhaseTwo.Completed = true;
+            player.PlaceCredits(HandPot, action.PhaseTwo.Credits);
 
+            foreach (var other in Players.Where(p => !p.Equals(player)))
+            {
+                // Others MUST Call, Fold or Raise when someone bets
+                other.State.PhaseTwo.Completed = false;
+            }
+
+            SetNextTurn();
         }
-        else if (playerAction.PhaseTwo.Junk)
+        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Junk)
         {
+            player.ShuffleHand();
+            DiscardPile.AddCards(player.Hand);
+            player.Hand.Clear();
 
+            SetNextTurn();
         }
-        else if (playerAction.PhaseTwo.Call)
+        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Call)
         {
+            // Slightly invalid
+            var match = HandPot.Highest.Values.Max();
 
+            player.State.PhaseTwo.Choice = PhaseTwoChoice.Call;
+            player.State.PhaseTwo.Credits = match;
+            player.State.PhaseTwo.Completed = true;
+            player.PlaceCredits(HandPot, match);
+
+            SetNextTurn();
         }
-        else if (playerAction.PhaseTwo.Raise)
+        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Raise)
         {
+            player.State.PhaseTwo.Choice = PhaseTwoChoice.Raise;
+            player.State.PhaseTwo.Credits = action.PhaseTwo.Credits;
+            player.State.PhaseTwo.Completed = true;
+            player.PlaceCredits(HandPot, action.PhaseTwo.Credits);
 
+            SetNextTurn();
         }
-
     }
 
-    private void NextTurn()
+    private void SetNextTurn()
     {
-        Players.ShiftTurnToNext();
+        if (Players.InPhase1())
+        {
+            Players.ShiftTurnToNext();
+        }
+
+        if (Players.InPhase2())
+        {
+            Players.ShiftTurnToNext();
+        }
+
+        if (Players.InPhase3())
+        {
+            // Dealer rolls the SpikeDice
+        }
     }
 
     private void Start()
@@ -281,12 +382,11 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
         while (true)
         {
-            player.ValueRef.Hand.Add(MainDeck.TakeTop());
-            player.ValueRef.Hand.Add(MainDeck.TakeTop());
+            player.ValueRef.Hand.AddRange(MainDeck.TakeTop(2));
 
             player = player.Next! ?? Players.First!;
 
-            if (player.ValueRef == CurrentPlayer)
+            if (player.Value.Equals(CurrentPlayer))
                 break;
         }
 
@@ -297,8 +397,8 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     {
         foreach (var player in Players)
         {
-            player.Ante(HandPot, 1);
-            player.Ante(SabaccPot, 2);
+            player.PlaceCredits(HandPot, 1);
+            player.PlaceCredits(SabaccPot, 2);
         }
     }
 

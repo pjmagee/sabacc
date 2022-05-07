@@ -4,7 +4,12 @@ public class Dice
 {
     private List<Die> dice;
 
-    public IEnumerable<Sides> Roll() => dice.Select(die => die.Roll());
+    public DieSides[]? Sides { get; private set; }
+
+    public void Roll()
+    {
+        Sides = dice.Select(die => die.Roll()).ToArray();
+    }
 
     public bool IsSabaccShift() => dice[0].Equals(dice[1]);
 
@@ -15,28 +20,16 @@ public class Dice
 
     private class Die : IEquatable<Die>
     {
-        public Sides Side { get; private set; }
+        public DieSides Sides { get; private set; }
 
-        public Sides Roll()
+        public DieSides Roll()
         {
-            Side = (Sides)((Sides[])Enum.GetValues(typeof(Sides))).OrderBy(x => Guid.NewGuid()).First();
-            return Side;
+            Sides = ((DieSides[])Enum.GetValues(typeof(DieSides))).OrderBy(x => Guid.NewGuid()).First();
+            return Sides;
         }
 
-        public bool Equals(Die? other) => Side.Equals(other?.Side);
+        public bool Equals(Die? other) => Sides.Equals(other?.Sides);
 
         public Die() => Roll();
-
-
     }
-
-    public enum Sides
-    {
-        One = 1,
-        Two,
-        Three,
-        Four,
-        Five,
-        Six
-    };
 }

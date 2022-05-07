@@ -1,5 +1,6 @@
 ﻿@page "/sessions"
 @using Sabacc.Domain
+@using System.ComponentModel.DataAnnotations
 @inject NavigationManager _navigationManager
 @inject SabaccSessionService _sabaccSessionService
 @inject BrowserStorage _browserStorage
@@ -37,9 +38,15 @@ else
                     <td>
                         @if (session.SessionStatus == SessionStatus.Open)
                         {
-                            <button class="btn btn-primary ms-1" @onclick="(MouseEventArgs e) => Join(session.SessionId)">Join</button>
+                            <EditForm Model="_forms[session]" OnValidSubmit="Join">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+
+                                <InputText @bind-Value="_forms[session].Name"/>
+                                <button type="submit" class="btn btn-primary ms-1">Join</button>
+                            </EditForm>
                         }
-                        <a href="/sessions/@session.SessionId" class="btn btn-secondary ms-1">Spectate</a>
+                        @*<a href="/sessions/@session.SessionId" class="btn btn-secondary ms-1">Spectate</a>*@
                     </td>
                 </tr>
             }
@@ -51,14 +58,28 @@ else
 
     private IEnumerable<SabaccSessionListItem>? _sessions = null;
 
+    private Dictionary<SabaccSessionListItem, JoinSessionForm> _forms;
+
+    public class JoinSessionForm
+    {
+        public Guid SessionId { set; get; }
+
+        [Required(AllowEmptyStrings = false)]
+        [MinLength(3), MaxLength(30)]
+        public string Name { get; set; }
+
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _sessions = await _sabaccSessionService.GetSessions();
+        _forms = _sessions.ToDictionary(x => x, x => new JoinSessionForm(){ SessionId = x.SessionId });
     }
 
-    public async Task Join(Guid sessionId)
+    public async void Join()
     {
-        var session = _sabaccSessionService.Sessions.Find(session => session.Id == sessionId);
+        var form = _forms.First(form => !string.IsNullOrEmpty(form.Value.Name));
+        var session = _sabaccSessionService.Sessions.Find(session => session.Id == form.Value.SessionId);
 
         if (session is not null)
         {
@@ -70,7 +91,7 @@ else
             }
             else
             {
-                session.JoinSession(playerId);
+                await session.JoinSession(playerId, form.Value.Name);
                 _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
             }
         }

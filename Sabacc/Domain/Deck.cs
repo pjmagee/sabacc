@@ -22,7 +22,11 @@ public class Deck
         }
     }
 
+    public void AddCards(IEnumerable<Card> cards) => AddCards(cards.ToArray());
+
     public Card TakeTop() => Cards.Pop();
+
+    public IEnumerable<Card> TakeTop(int count) => Enumerable.Range(0, count).Select(x => Cards.Pop());
 
     public Card? ViewTop()
     {

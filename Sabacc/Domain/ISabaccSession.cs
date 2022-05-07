@@ -15,10 +15,10 @@ public interface ISabaccSession
     SessionStatus Status { get; }
 
     void SetSlots(int slots);
-    void JoinSession(Guid playerId);
-    void LeaveSession(Guid playerId);
+    Task JoinSession(Guid id, string name);
+    Task LeaveSession(Guid id);
 
     PlayerViewModel GetPlayerView(Guid playerId);
     SpectatorView GetSpectateView();
-    void PlayerTurn(PlayerAction playerAction);
+    Task PlayerTurn(Guid playerId, PlayerState playerState);
 }

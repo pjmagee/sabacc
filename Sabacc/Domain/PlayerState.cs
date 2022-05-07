@@ -1,23 +1,19 @@
 ﻿namespace Sabacc.Domain;
 
-public class PlayerAction
+public class PlayerState
 {
-    public Guid SessionId { get; set; }
-    public Guid PlayerId { get; set; }
-    public PhaseTwo PhaseTwo { get; set; }
     public PhaseOne PhaseOne { get; set; }
+    public PhaseTwo PhaseTwo { get; set; }
+    public PhaseThree PhaseThree { get; set; }
+
     public Phase Phase { get; set; }
     public bool MyTurn { get; set; }
 
-    public PlayerAction()
+    public PlayerState()
     {
         PhaseOne = new PhaseOne();
         PhaseTwo = new PhaseTwo();
-    }
-
-    public void Validate()
-    {
-
+        PhaseThree = new PhaseThree();
     }
 
     public bool IsSwap()

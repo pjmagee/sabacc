@@ -1,17 +1,27 @@
-﻿namespace Sabacc.Domain;
+﻿using System.Linq;
+
+namespace Sabacc.Domain;
 
 public class PlayersCircularList : LinkedList<Player>
 {
     public LinkedListNode<Player> CurrentDealer { get; private set; } = null!;
     public LinkedListNode<Player> CurrentTurn { get; private set; } = null!;
 
-    public void Join(Guid playerId)
+    public void Join(Guid id, string name)
     {
         if (Count == 0)
-            AddFirst(new Player(playerId));
+        {
+            AddFirst(new Player(id, name));
+        }
         else
-            AddLast(new Player(playerId));
+        {
+            AddLast(new Player(id, name));
+        }
     }
+
+    public bool InPhase1() => this.Any(p => p.State.PhaseOne.Completed == false);
+    public bool InPhase2() => this.Any(p => !InPhase1() && p.State.PhaseTwo.Completed == false);
+    public bool InPhase3() => this.Any(p => !InPhase1() && !InPhase2() && p.State.PhaseThree.Completed == false);
 
     public void Leave(Guid playerId)
     {
@@ -54,5 +64,8 @@ public class PlayersCircularList : LinkedList<Player>
             throw new InvalidOperationException("Minimum of 2 players required.");
 
         CurrentTurn = CurrentTurn.Next ?? First!;
+
+        if (CurrentTurn.Value.State.PhaseTwo.Choice == PhaseTwoChoice.Junk)
+            ShiftTurnToNext();
     }
 }

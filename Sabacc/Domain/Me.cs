@@ -2,26 +2,23 @@
 
 public class Me
 {
-    public Guid Id { get; set; }
-    public int Credits { get; set; }
-    public List<Card> Hand { get; set; }
-    public PlayerAction ActionState { get; set; }
-    public bool MyTurn => ActionState.MyTurn;
+    public Player Player { get; set; }
+    public int Credits => Player.Credits;
+    public List<Card> Hand => Player.Hand;
+    public PlayerState State { get; set; }
+    public bool MyTurn => State.MyTurn;
+    public Phase Phase => State.Phase;
+}
 
-    public Phase Phase
+public static class Extensions
+{
+    public static string ToDisplayName(this Phase phase)
     {
-        get
+        return phase switch
         {
-            if (!ActionState.PhaseOne.Completed)
-                return Phase.Choose;
-
-            if (!ActionState.PhaseTwo.Completed)
-                return Phase.Bet;
-
-            if (ActionState.PhaseOne.Completed && ActionState.PhaseTwo.Completed)
-                return Phase.SpikeDice;
-
-            throw new InvalidOperationException("Unhandled action state for getting the Phase");
-        }
+            Phase.One => "Phase 1 (dealt cards)",
+            Phase.Two => "Phase 2 (betting)",
+            Phase.Three => "Phase 3 (Spike dice)"
+        };
     }
 }

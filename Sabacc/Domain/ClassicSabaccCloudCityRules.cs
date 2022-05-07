@@ -15,22 +15,17 @@ public class ClassicSabaccCloudCityRules : ISabaccSession
     public SabaccVariantType VariantType { get; }
     public SessionStatus Status { get; }
 
-    public ClassicSabaccCloudCityRules()
-    {
-
-    }
-
     public void SetSlots(int slots)
     {
         throw new NotImplementedException();
     }
 
-    public void JoinSession(Guid playerId)
+    public async Task JoinSession(Guid playerId, string name)
     {
         throw new NotImplementedException();
     }
 
-    public void LeaveSession(Guid playerId)
+    public async Task LeaveSession(Guid playerId)
     {
         throw new NotImplementedException();
     }
@@ -45,7 +40,7 @@ public class ClassicSabaccCloudCityRules : ISabaccSession
         throw new NotImplementedException();
     }
 
-    public void PlayerTurn(PlayerAction playerAction)
+    public async Task PlayerTurn(Guid playerId, PlayerState playerState)
     {
         throw new NotImplementedException();
     }

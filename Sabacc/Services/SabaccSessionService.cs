@@ -20,7 +20,7 @@ namespace Sabacc.Services
             if (session is null)
             {
                 session = _sabaccSessionFactory.Create(createSessionForm);
-                session.JoinSession(playerId);
+                await session.JoinSession(playerId, createSessionForm.PlayerName);
                 Sessions.Add(session);
             }
 
@@ -48,10 +48,10 @@ namespace Sabacc.Services
             return Sessions.Select(session => new SabaccSessionListItem(session)).ToList();
         }
 
-        public async Task SubmitTurn(Guid sessionId, Guid playerId, PlayerAction playerAction)
+        public async Task SubmitTurn(Guid sessionId, Guid playerId, PlayerState playerState)
         {
             var session = Sessions.Find(sesson => sesson.Id == sessionId && sesson.PlayerIds.Contains(playerId))!;
-            session.PlayerTurn(playerAction);
+            await session.PlayerTurn(playerId, playerState).ConfigureAwait(false);
         }
     }
 }
