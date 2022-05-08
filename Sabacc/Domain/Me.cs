@@ -9,16 +9,3 @@ public class Me
     public bool MyTurn => State.MyTurn;
     public Phase Phase => State.Phase;
 }
-
-public static class Extensions
-{
-    public static string ToDisplayName(this Phase phase)
-    {
-        return phase switch
-        {
-            Phase.One => "Phase 1 (dealt cards)",
-            Phase.Two => "Phase 2 (betting)",
-            Phase.Three => "Phase 3 (Spike dice)"
-        };
-    }
-}

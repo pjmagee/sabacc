@@ -34,14 +34,14 @@ else
                 <td>
                     <div class="row row-cols-2">
                         <div class="col-auto">
-                            @if (Model.SpikeDice.Sides is not null)
+                            @if (Model.Dice.Sides is not null)
                             {
-                                <text>@string.Join(", ", Model.SpikeDice.Sides)</text>
+                                <text>@string.Join(", ", Model.Dice.Sides)</text>
                             }
 
                         </div>
                         <div class="col-auto">
-                            @if (Model.IsMePhaseThree() && Model.CanRoll())
+                            @if (Model.CanDiceRoll())
                             {
                                 <button class="btn btn-danger" @onclick="e => Roll()">Roll</button>
                             }
@@ -116,7 +116,9 @@ else
                         }
                         else
                         {
-                            <text>@playerView.Player.Name's hand</text>
+                            <text>
+                                @playerView.Player.Name's hand
+                            </text>
                         }
                     </th>
                     <th>
@@ -126,7 +128,9 @@ else
                         }
                         else
                         {
-                            <text>@playerView.Player.Name's score</text>
+                            <text>
+                                @playerView.Player.Name's score
+                            </text>
                         }
                     </th>
                 }
@@ -140,30 +144,34 @@ else
                     @foreach (var playerView in Model.Players)
                     {
                         <td>
-                            @string.Join(", ", playerView.Player.Hand)
+                            <span>
+                                @string.Join(", ", playerView.Player.Hand)
+                            </span>
+                            <span>
+                                (@playerView.Player.Hand.HandType.ToDisplayName())
+                            </span>
                         </td>
                         <td>
                             @playerView.Player.Hand.Sum(card => card.Value)
                         </td>
                     }
                 </tr>
-                <tr class="text-center">
+                <tr>
                     <td colspan="@(Model.Players.Count * 2)" class="table-info">
 
                         @if (Model.CanClaimSabaccPot())
                         {
-                            <button class="btn btn-primary">Claim both pots</button>
+                            <button class="btn btn-primary" @onclick="ClaimWin">Claim both pots</button>
                         }
                         else if (Model.CanClaimHandPot())
                         {
-                            <button class="btn btn-primary">Claim hand pot</button>
+                            <button class="btn btn-primary" @onclick="ClaimWin">Claim hand pot</button>
                         }
-                        else if (Model.LostRound())
+                        else if (Model.CanAcknowledgeLoss())
                         {
                             <!-- Ready up for next round -->
-                            <button class="btn btn-primary">Ready</button>
+                            <button class="btn btn-primary" @onclick="AcknowledgeLoss">Ready</button>
                         }
-
                     </td>
                 </tr>
             }
@@ -171,7 +179,7 @@ else
             {
                 <tr>
                     <td colspan="@(Model.Players.Count * 2)" class="table-info">
-                        The showdown is only available during Phase 3 where all players reveal their cards
+                        The showdown is only available during Phase 3 where all players reveal their cards.
                     </td>
                 </tr>
             }
@@ -649,6 +657,28 @@ else
                 PhaseThree = new PhaseThree() { Choice = PhaseThreeChoice.DealerRoll },
                 Phase = Phase.Three
             };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    private async Task ClaimWin()
+    {
+        var action = new PlayerState
+        {
+            PhaseThree = new PhaseThree() { Choice = PhaseThreeChoice.ClaimWin },
+            Phase = Phase.Three
+        };
+
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+    }
+
+    private async Task AcknowledgeLoss()
+    {
+        var action = new PlayerState
+        {
+            PhaseThree = new PhaseThree() { Choice = PhaseThreeChoice.AcknowledgeLoss },
+            Phase = Phase.Three
+        };
 
         await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
     }

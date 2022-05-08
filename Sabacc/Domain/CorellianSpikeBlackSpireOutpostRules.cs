@@ -7,24 +7,10 @@ using Sabacc.Hubs;
 
 namespace Sabacc.Domain;
 
-public enum Phase
-{
-    One,
-    Two,
-    Three
-}
-
-public class Scorer
-{
-    public Player ComputeWinner(List<Player> players)
-    {
-        throw new NotImplementedException();
-    }
-}
-
 public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 {
     private readonly IHubContext<PlayerNotificationHub> _playerNotifier;
+    private readonly IWinnerCalculator _winnerCalculator;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public Player? CurrentPlayer => Players.CurrentTurn?.ValueRef;
@@ -40,12 +26,13 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     public Deck DiscardPile { get; set; } = new();
     public Pot HandPot { get; set; } = new(PotType.TheHand);
     public Pot SabaccPot { get; set; } = new(PotType.TrueSabacc);
-    public Dice SpikeDice { get; set; } = new();
+    public Dice Dice { get; set; } = new();
     public SessionStatus Status { get; private set; } = SessionStatus.Open;
 
-    public CorellianSpikeBlackSpireOutpostRules(IHubContext<PlayerNotificationHub> playerNotifier)
+    public CorellianSpikeBlackSpireOutpostRules(IHubContext<PlayerNotificationHub> playerNotifier, IWinnerCalculator winnerCalculator)
     {
         _playerNotifier = playerNotifier;
+        _winnerCalculator = winnerCalculator;
     }
 
     public void SetSlots(int slots)
@@ -83,8 +70,6 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
     private PlayerState GetNextState(Player player)
     {
-
-
         player.State.MyTurn = player.Equals(CurrentPlayer);
 
         List<PlayerState> states = Players.Select(p => p.State).ToList();
@@ -98,7 +83,8 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
         if (player.State.Phase == Phase.Three)
         {
-            player.State.MyTurn = true; // No particular order for Acknowledge Loss/Win Actions
+            player.State.MyTurn = player.State.PhaseThree.Completed == false &&
+                                  player.State.PhaseThree.Choice == null;
         }
 
         if (player.State.Phase == Phase.Two)
@@ -134,7 +120,8 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
                 Decks = GetDeckViews(),
                 CurrentPlayer = Players.CurrentTurn?.ValueRef,
                 CurrentDealer = Players.CurrentDealer?.ValueRef,
-                SpikeDice = SpikeDice,
+                Dice = Dice,
+                DiceRolled = Players.CurrentDealer?.ValueRef.State.PhaseThree.Result is not null,
                 Me = new Me()
                 {
                     Player = me,
@@ -197,33 +184,41 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     {
         if (action.PhaseThree.Choice == PhaseThreeChoice.DealerRoll)
         {
-            SpikeDice.Roll();
+            Dice.Roll();
 
             player.State.PhaseThree.Choice = PhaseThreeChoice.DealerRoll;
-            player.State.PhaseThree.Result = SpikeDice.Sides;
-            player.State.PhaseThree.IsSabaccShift = SpikeDice.IsSabaccShift();
+            player.State.PhaseThree.Result = Dice.Sides;
+            player.State.PhaseThree.IsSabaccShift = Dice.IsSabaccShift();
 
-            if (SpikeDice.IsSabaccShift())
+            if (Dice.IsSabaccShift())
             {
-                // Oh boyyyyyyyyyyyyyyy
+
             }
             else
             {
-                // Calculate who won
-
+                CalculateWinner();
             }
         }
         else if (action.PhaseThree.Choice == PhaseThreeChoice.ClaimWin)
         {
-            // Player claim pot amounts
-            // Clear appropriate Pots (Sabacc, Hand or Both)
-            // Cards back to Main deck
+            player.State.PhaseThree.Choice = action.PhaseThree.Choice;
+            player.TakeCredits(HandPot);
+
+            if (player.State.PhaseThree.WonSabacc)
+            {
+                player.TakeCredits(SabaccPot);
+            }
         }
         else if (action.PhaseThree.Choice == PhaseThreeChoice.AcknowledgeLoss)
         {
-            // Cards back to Main deck
+            player.State.PhaseThree.Choice = action.PhaseThree.Choice;
         }
 
+    }
+
+    private void CalculateWinner()
+    {
+        _winnerCalculator.Calculate(Players);
     }
 
     private void HandlePhaseOne(Player player, PlayerState action)
@@ -310,7 +305,6 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
             foreach (var other in Players.Where(p => !p.Equals(player)))
             {
-                // Others MUST Call, Fold or Raise when someone bets
                 other.State.PhaseTwo.Completed = false;
             }
 
@@ -326,8 +320,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
         else if (action.PhaseTwo.Choice == PhaseTwoChoice.Call)
         {
-            // Slightly invalid
-            var match = HandPot.Highest.Values.Max();
+            int match = HandPot.Highest.Values.Max();
 
             player.State.PhaseTwo.Choice = PhaseTwoChoice.Call;
             player.State.PhaseTwo.Credits = match;
@@ -406,16 +399,16 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     {
         var positives = new List<IEnumerable<Card>>()
         {
-            Enumerable.Range(1, 10).Select(x => new Card() {Value = x, Suit = "Trangles", State = CardState.InDeck}),
-            Enumerable.Range(1, 10).Select(x => new Card() {Value = x, Suit = "Squares", State = CardState.InDeck}),
-            Enumerable.Range(1, 10).Select(x => new Card() {Value = x, Suit = "Circles", State = CardState.InDeck})
+            Enumerable.Range(1, 10).Select(x => new Card() {Value = x, Suit = "Trangles" }),
+            Enumerable.Range(1, 10).Select(x => new Card() {Value = x, Suit = "Squares" }),
+            Enumerable.Range(1, 10).Select(x => new Card() {Value = x, Suit = "Circles" })
         };
 
         var negatives = new List<IEnumerable<Card>>()
         {
-            Enumerable.Range(1, 10).Select(x => new Card() { Value = -x, Suit = "Trangles", State = CardState.InDeck }),
-            Enumerable.Range(1, 10).Select(x => new Card() { Value = -x, Suit = "Squares", State = CardState.InDeck }),
-            Enumerable.Range(1, 10).Select(x => new Card() { Value = -x, Suit = "Circles", State = CardState.InDeck })
+            Enumerable.Range(1, 10).Select(x => new Card() { Value = -x, Suit = "Trangles" }),
+            Enumerable.Range(1, 10).Select(x => new Card() { Value = -x, Suit = "Squares" }),
+            Enumerable.Range(1, 10).Select(x => new Card() { Value = -x, Suit = "Circles" })
         };
 
         MainDeck.AddCards(new Card() { Name = "Sylops", Value = 0 }, new Card() { Name = "Sylops", Value = 0 });

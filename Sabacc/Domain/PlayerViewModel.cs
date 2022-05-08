@@ -11,19 +11,20 @@ public class PlayerViewModel
 
     public Player? CurrentPlayer { get; set; }
     public Player? CurrentDealer { get; set; }
-
-    public Dice SpikeDice { get; set; }
+    public Dice Dice { get; set; }
+    public bool DiceRolled { get; set; }
 
     public bool IsMePhaseOne() => Me.MyTurn && Me.Phase == Phase.One;
 
     public bool IsMePhaseTwo() => Me.MyTurn && Me.Phase == Phase.Two;
 
-    public bool IsMePhaseThree() => Me.MyTurn && Me.Phase == Phase.Three && !Me.Player.State.PhaseThree.Completed;
+    public bool IsMePhaseThree() => Me.MyTurn && Me.Phase == Phase.Three && DiceRolled && !Me.Player.State.PhaseThree.Completed;
 
-
-    public bool CanRoll()
+    public bool CanDiceRoll()
     {
-        return Me.Player.Equals(CurrentDealer) && Me.Phase == Phase.Three && Me.Player.State.PhaseThree.Result is null;
+        return Me.Player.Equals(CurrentDealer) &&
+               Me.Phase == Phase.Three &&
+               Me.Player.State.PhaseThree.Result is null;
     }
 
     public bool CanCheck()
@@ -94,19 +95,21 @@ public class PlayerViewModel
 
     public bool CanClaimHandPot()
     {
-        return Me.Phase == Phase.Three && Me.State.PhaseThree.WonRound;
+        return IsPhase3Pending() && Me.State.PhaseThree.WonRound;
     }
 
-    public bool LostRound()
+    public bool CanAcknowledgeLoss()
     {
-        return Me.Phase == Phase.Three && Me.State.PhaseThree.LostRound;
-
+        return IsPhase3Pending() && !Me.State.PhaseThree.WonRound && DiceRolled;
     }
 
     public bool CanClaimSabaccPot()
     {
-        return Me.Phase == Phase.Three &&
-               Me.State.PhaseThree.WonRound &&
-               Me.State.PhaseThree.WonSabacc;
+        return IsPhase3Pending() && Me.State.PhaseThree.WonRound && Me.State.PhaseThree.WonSabacc;
+    }
+
+    private bool IsPhase3Pending()
+    {
+        return Me.Phase == Phase.Three && !Me.State.PhaseThree.Completed;
     }
 }

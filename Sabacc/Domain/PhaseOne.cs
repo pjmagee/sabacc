@@ -1,24 +1,5 @@
 ﻿namespace Sabacc.Domain;
 
-public class PhaseThree
-{
-    public PhaseThreeChoice? Choice { get; set; }
-    public DieSides[]? Result { get; set; }
-    public bool IsSabaccShift { get; set; }
-
-    public bool Completed { get; set; }
-    public bool WonRound { get; set; }
-    public bool LostRound { get; set; }
-    public bool WonSabacc { get; set; }
-}
-
-public enum PhaseThreeChoice
-{
-    DealerRoll,
-    ClaimWin,
-    AcknowledgeLoss
-}
-
 public class PhaseOne
 {
     public PhaseOneChoice? Choice { get; set; } = null!;

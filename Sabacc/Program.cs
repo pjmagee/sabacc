@@ -39,6 +39,7 @@ builder.Services.AddSingleton<SabaccSessionFactory>();
 builder.Services.AddSingleton<SabaccSessionService>();
 builder.Services.AddSingleton(provider => provider);
 builder.Services.AddTransient<ClassicSabaccCloudCityRules>();
+builder.Services.AddTransient<IWinnerCalculator, WinnerCalculator>();
 builder.Services.AddTransient<CorellianSpikeBlackSpireOutpostRules>();
 
 

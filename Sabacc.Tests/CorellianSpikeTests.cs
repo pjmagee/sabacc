@@ -25,7 +25,8 @@ namespace Sabacc.Tests
         public void Session_Status_WhenNew_IsOpen()
         {
             var hubContext = GetHubContextMock();
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
 
             Assert.Equal(SessionStatus.Open, sabacc.Status);
@@ -35,7 +36,8 @@ namespace Sabacc.Tests
         public void Session_Status_WhenFull_IsStarted()
         {
             var hubContext = GetHubContextMock();
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
 
             Guid player1 = Guid.NewGuid();
@@ -56,8 +58,8 @@ namespace Sabacc.Tests
             Guid player2 = Guid.NewGuid();
 
             var hubContext = GetHubContextMock();
-
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
 
             Assert.Null(sabacc.CurrentDealer);
@@ -74,7 +76,8 @@ namespace Sabacc.Tests
 
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
 
             Assert.Null(sabacc.CurrentPlayer);
@@ -93,7 +96,8 @@ namespace Sabacc.Tests
 
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
 
             sabacc.JoinSession(player1, "P1");
@@ -110,7 +114,8 @@ namespace Sabacc.Tests
 
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
             sabacc.JoinSession(player1, "P1");
             sabacc.JoinSession(player2, "P2");
@@ -129,7 +134,8 @@ namespace Sabacc.Tests
 
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
             sabacc.JoinSession(player1, "P1");
             sabacc.JoinSession(player2, "P2");
@@ -147,7 +153,8 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
             sabacc.JoinSession(Guid.NewGuid(), "P1");
             sabacc.JoinSession(Guid.NewGuid(), "P2");
@@ -184,7 +191,9 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
+
             sabacc.SetSlots(2);
             sabacc.JoinSession(Guid.NewGuid(), "P1");
             sabacc.JoinSession(Guid.NewGuid(), "P2");
@@ -222,7 +231,9 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
+
             sabacc.SetSlots(2);
             sabacc.JoinSession(Guid.NewGuid(), "P1");
             sabacc.JoinSession(Guid.NewGuid(), "P2");
@@ -259,7 +270,9 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
+
             sabacc.SetSlots(2);
             sabacc.JoinSession(Guid.NewGuid(), "P1");
             sabacc.JoinSession(Guid.NewGuid(), "P2");
@@ -288,7 +301,6 @@ namespace Sabacc.Tests
             Assert.True(view.CanKeepOrDiscard(view.Me.Hand.Find(c => c.Id == view.Me.State.PhaseOne.Gain1DrawnCardId.Value)));
             Assert.False(view.CanKeepOrDiscard(view.Me.Hand.Find(c => c.Id != view.Me.State.PhaseOne.Gain1DrawnCardId.Value)));
 
-
             Assert.False(view.CanGainOption1());
             Assert.False(view.CanGainOption2());
             Assert.False(view.CanSwap());
@@ -300,7 +312,9 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
+
             sabacc.SetSlots(2);
             sabacc.JoinSession(Guid.NewGuid(), "P1");
             sabacc.JoinSession(Guid.NewGuid(), "P2");
@@ -343,7 +357,9 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
+
             sabacc.SetSlots(players);
 
             var ids = Enumerable.Range(1, players).Select(x => Guid.NewGuid()).ToList();
@@ -384,7 +400,9 @@ namespace Sabacc.Tests
         {
             var hubContext = GetHubContextMock();
 
-            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object);
+            var winningCalculator = new Mock<IWinnerCalculator>();
+            var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
+
             sabacc.SetSlots(players);
 
             var ids = Enumerable.Range(1, players).Select(x => Guid.NewGuid()).ToList();

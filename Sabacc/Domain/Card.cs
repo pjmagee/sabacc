@@ -10,7 +10,6 @@ public class Card
 
     public string Suit { get; set; }
 
-    public CardState State { get; set; } = CardState.InDeck;
 
     public override string ToString()
     {
