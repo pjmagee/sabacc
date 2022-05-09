@@ -10,7 +10,9 @@ public class Player : IEquatable<Player>
     public Hand Hand { get; private set; }
     public PlayerState State { get; }
 
-
+    public bool PhaseOneCompleted() => State?.PhaseOne?.Completed == true;
+    public bool PhaseTwoCompleted() => State?.PhaseTwo?.Completed == true;
+    public bool PhaseThreeCompleted() => State?.PhaseThree?.Completed == true;
 
     public Player(Guid id, string name)
     {

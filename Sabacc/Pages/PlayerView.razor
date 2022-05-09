@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Sabacc.Domain
 @using Sabacc.Hubs
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 <PageTitle>Player</PageTitle>
 @inject SabaccSessionService _sabaccSessionService
@@ -28,24 +29,25 @@ else
         <tbody>
             <tr>
                 <td>@Model.Round</td>
-                <td>@Model.Me.Phase.ToDisplayName()</td>
+                <td>@Model.Phase.ToDisplayName()</td>
                 <td>@Model.CurrentPlayer?.Name</td>
                 <td>@Model.CurrentDealer?.Name</td>
                 <td>
                     <div class="row row-cols-2">
-                        <div class="col-auto">
+
                             @if (Model.Dice.Sides is not null)
                             {
-                                <text>@string.Join(", ", Model.Dice.Sides)</text>
+                                <div class="col-auto">
+                                    <text>@string.Join(", ", Model.Dice.Sides)</text>
+                                </div>
                             }
 
-                        </div>
-                        <div class="col-auto">
                             @if (Model.CanDiceRoll())
                             {
-                                <button class="btn btn-danger" @onclick="e => Roll()">Roll</button>
+                                <div class="col-auto">
+                                    <button class="btn btn-danger" @onclick="e => Roll()">Roll Spike Dice</button>
+                                </div>
                             }
-                        </div>
                     </div>
                 </td>
             </tr>
@@ -55,122 +57,107 @@ else
     <table class="table table-sm mb-4 caption-top">
         <caption>The players</caption>
         <thead>
-            <tr>
-                <th>Dealer</th>
-                <th>Turn</th>
-                <th>Player</th>
-                <th>Cards</th>
-                <th>Credits</th>
-                <th>Phase 1 (Cards)</th>
-                <th>Phase 2 (Bets)</th>
-                <th>Phase 3 (Spike)</th>
-            </tr>
+        <tr>
+            <th>Dealer</th>
+            <th>Turn</th>
+            <th>Player</th>
+            <th>Cards</th>
+            <th>Credits</th>
+            <th>Phase 1</th>
+            <th>Phase 2</th>
+            <th>Phase 3</th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var playerView in Model.Players)
-            {
-                <tr class="@(playerView.IsTurn && Model.Me.Player.Equals(playerView.Player) ? "table-success" : string.Empty)">
+        @foreach (var playerView in Model.Players)
+        {
+            <tr class="@(playerView.IsTurn && Model.Me.Player.Equals(playerView.Player) ? "table-success" : string.Empty)">
 
-                    <td>@(playerView.IsDealer ? "🤵" : string.Empty)</td>
-                    <td>@(playerView.IsTurn ? "➡️" : string.Empty)</td>
+                <td>@(playerView.IsDealer ? "🤵" : string.Empty)</td>
+                <td>@(playerView.IsTurn ? "➡️" : string.Empty)</td>
 
-                    <td>
-                        @if (Model.Me.Player.Equals(playerView.Player))
-                        {
-                            <text>You</text>
-                        }
-                        else
-                        {
-                            <text>@playerView.Player.Name</text>
-                        }
-                    </td>
+                <td>
+                    @if (Model.Me.Player.Equals(playerView.Player))
+                    {
+                        <text>You</text>
+                    }
+                    else
+                    {
+                        <text>@playerView.Player.Name</text>
+                    }
+                </td>
 
-                    <td>@(string.Join(" ", Enumerable.Range(0, playerView.Player.Hand.Count).Select(x => "🎴")))</td>
+                <td>@(string.Join(" ", Enumerable.Range(0, playerView.Player.Hand.Count).Select(x => "🎴")))</td>
 
-                    <td>@playerView.Player.Credits</td>
+                <td>@playerView.Player.Credits</td>
 
-                    <td>@playerView.PhaseOne.Choice</td>
-                    <td>@playerView.PhaseTwo.Choice</td>
+                <td>@playerView.PhaseOne.Choice</td>
+                <td>@playerView.PhaseTwo.Choice</td>
 
-                    <td>
-                        @if (playerView.PhaseThree.Result is not null)
-                        {
-                            @string.Join(", ", playerView.PhaseThree.Result)
-                        }
-                    </td>
-                </tr>
-            }
+                <td>
+                    @if (playerView.PhaseThree.DiceRolled is not null)
+                    {
+                        @string.Join(", ", playerView.PhaseThree.DiceRolled)
+                    }
+                </td>
+            </tr>
+        }
         </tbody>
     </table>
+
+    @if (Model.Winner is not null)
+    {
+        <div class="alert alert-info">
+            @if (Model.Me.Player.Equals(Model.Winner?.Player))
+            {
+                <text>You won the round!</text>
+            }
+            else
+            {
+                <text>@(Model.Winner.Player.Name) has won the round!</text>
+            }
+        </div>
+    }
 
     <table class="table table-sm mb-4 caption-top">
         <caption>The showdown</caption>
         <thead>
             <tr>
-                @foreach (var playerView in Model.Players)
-                {
-                    <th>
-                        @if (Model.Me.Player.Equals(playerView.Player))
-                        {
-                            <text>Your hand</text>
-                        }
-                        else
-                        {
-                            <text>
-                                @playerView.Player.Name's hand
-                            </text>
-                        }
-                    </th>
-                    <th>
-                        @if (Model.Me.Player.Equals(playerView.Player))
-                        {
-                            <text>Your Score</text>
-                        }
-                        else
-                        {
-                            <text>
-                                @playerView.Player.Name's score
-                            </text>
-                        }
-                    </th>
-                }
+                <th>Player</th>
+                <th>Cards</th>
+                <th>Hand</th>
+                <th>Total</th>
             </tr>
         </thead>
         <tbody>
-
             @if (Model.IsMePhaseThree())
             {
+                @foreach (var playerView in Model.Players)
+                {
+                    <tr>
+                        <td>@playerView.Player.Name</td>
+                        <td>@string.Join(", ", playerView.Player.Hand)</td>
+                        <td>@playerView.Player.Hand.HandType.ToDisplayName()</td>
+                        <td>@playerView.Player.Hand.Sum(card => card.Value)</td>
+                    </tr>
+                }
                 <tr>
-                    @foreach (var playerView in Model.Players)
-                    {
-                        <td>
-                            <span>
-                                @string.Join(", ", playerView.Player.Hand)
-                            </span>
-                            <span>
-                                (@playerView.Player.Hand.HandType.ToDisplayName())
-                            </span>
-                        </td>
-                        <td>
-                            @playerView.Player.Hand.Sum(card => card.Value)
-                        </td>
-                    }
-                </tr>
-                <tr>
-                    <td colspan="@(Model.Players.Count * 2)" class="table-info">
-
-                        @if (Model.CanClaimSabaccPot())
+                    <td colspan="1">
+                        @if (Model.IsSabaccWinner())
                         {
                             <button class="btn btn-primary" @onclick="ClaimWin">Claim both pots</button>
                         }
-                        else if (Model.CanClaimHandPot())
+                        else if (Model.IsWinner())
                         {
-                            <button class="btn btn-primary" @onclick="ClaimWin">Claim hand pot</button>
+                            <button class="btn btn-success" @onclick="ClaimWin">Claim hand pot</button>
                         }
-                        else if (Model.CanAcknowledgeLoss())
+                        else if (Model.IsLoser())
                         {
-                            <!-- Ready up for next round -->
-                            <button class="btn btn-primary" @onclick="AcknowledgeLoss">Ready</button>
+                            <button class="btn btn-primary" @onclick="Ready">Ready</button>
+                        }
+                        else if (Model.IsSabaccShift())
+                        {
+                            <button class="btn btn-primary" @onclick="Ready">Ready</button>
                         }
                     </td>
                 </tr>
@@ -179,7 +166,8 @@ else
             {
                 <tr>
                     <td colspan="@(Model.Players.Count * 2)" class="table-info">
-                        The showdown is only available during Phase 3 where all players reveal their cards.
+                        <span>The showdown is only available during the end of the round.</span>
+                        <span>If a Sabacc Shift occurs, the round will continue back to Phase 1</span>
                     </td>
                 </tr>
             }
@@ -420,7 +408,7 @@ else
                             </div>
                         </div>
                     </td>
-                    <td>Match the highest bet, placing the credits into the Hand pot.</td>
+                    <td>Raise the highest bet, placing the credits into the Hand pot.</td>
                 </tr>
             }
 
@@ -483,204 +471,135 @@ else
 
 @code {
 
-    private HubConnection? hubConnection;
+    private HubConnection _hubConnection = null!;
 
-    private PlayerViewModel? Model = null;
+    public PlayerViewModel? Model;
 
     [Parameter]
     public Guid SessionId { get; set; }
 
-    public Guid PlayerId { get; set; }
+    public Guid? PlayerId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder()
+        _hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/update"))
             .Build();
 
-        hubConnection.On<Guid>(PlayerNotificationHub.Method, async (sessionId) =>
+        _hubConnection.On<Guid>(PlayerNotificationHub.Method, async (sessionId) =>
         {
-            if (sessionId.Equals(SessionId))
+            if (sessionId.Equals(SessionId) && PlayerId.HasValue)
             {
-                Model = await _sabaccSessionService.GetPlayerView(SessionId, PlayerId);
+                Model = await _sabaccSessionService.GetPlayerView(SessionId, PlayerId.Value);
                 await InvokeAsync(StateHasChanged);
             }
         });
 
-        await hubConnection.StartAsync();
+        await _hubConnection.StartAsync();
     }
 
     private async Task Stand()
     {
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, new PlayerState()
-            {
-                PhaseOne = new PhaseOne(PhaseOneChoice.Stand)
-            });
+        var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Stand));
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            PlayerId = await _browserStorage.GetPlayerId();
+        PlayerId = await _browserStorage.GetPlayerId();
 
-            if (_sabaccSessionService.IsValidPlayer(SessionId, PlayerId))
-            {
-                Model = await _sabaccSessionService.GetPlayerView(SessionId, PlayerId);
-                StateHasChanged();
-            }
-            else
-            {
-                _navigationManager.NavigateTo($"/sessions/{SessionId}");
-            }
+        if (_sabaccSessionService.IsValidPlayer(SessionId, PlayerId.Value))
+        {
+            Model = await _sabaccSessionService.GetPlayerView(SessionId, PlayerId.Value);
+            StateHasChanged();
+        }
+        else
+        {
+            _navigationManager.NavigateTo($"/sessions/{SessionId}");
         }
     }
 
     private async Task GainOption2(Guid cardId)
     {
-        var action = new PlayerState
-            {
-                PhaseOne = new PhaseOne(PhaseOneChoice.Gain2) { Gain2Discard = cardId },
-                Phase = Phase.One
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Gain2) {Gain2Discard = cardId});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task GainOption1()
     {
-        var action = new PlayerState()
-            {
-                PhaseOne = new PhaseOne(PhaseOneChoice.Gain1) { Gain1DrawnCardId = null },
-                Phase = Phase.One
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Gain1) {Gain1DrawnCardId = null});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task GainOption1Discard(Guid cardId)
     {
-        var action = new PlayerState
-            {
-                PhaseOne = new PhaseOne(PhaseOneChoice.Gain1)
-                {
-                    Gain1DrawnCardId = Model!.Me.State.PhaseOne.Gain1DrawnCardId,
-                    Gain1DiscardCardId = cardId
-                },
-                Phase = Phase.One
-            };
+        var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Gain1)
+        {
+            Gain1DrawnCardId = Model!.Me.State.PhaseOne.Gain1DrawnCardId,
+            Gain1DiscardCardId = cardId
+        });
 
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task GainOption1Keep(Guid cardId)
     {
-        var action = new PlayerState
-            {
-                PhaseOne = new PhaseOne(PhaseOneChoice.Gain1) { Gain1KeepCardId = cardId },
-                Phase = Phase.One
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Gain1) {Gain1KeepCardId = cardId});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Swap(Guid cardId)
     {
-        var action = new PlayerState
-            {
-                PhaseOne = new PhaseOne(PhaseOneChoice.Swap) { SwapCardId = cardId },
-                Phase = Phase.One
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Swap) {SwapCardId = cardId});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Check()
     {
-        var action = new PlayerState
-            {
-                PhaseTwo = new PhaseTwo() { Choice = PhaseTwoChoice.Check },
-                Phase = Phase.Two
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseTwo() {Choice = PhaseTwoChoice.Check});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Raise()
     {
-        var action = new PlayerState
-            {
-                PhaseTwo = new PhaseTwo() { Choice = PhaseTwoChoice.Raise, Credits = 100 },
-                Phase = Phase.Two
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseTwo() {Choice = PhaseTwoChoice.Raise, Credits = 100});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Bet()
     {
-        var action = new PlayerState
-            {
-                PhaseTwo = new PhaseTwo() { Choice = PhaseTwoChoice.Bet, Credits = 100 },
-                Phase = Phase.Two
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseTwo() {Choice = PhaseTwoChoice.Bet, Credits = 100});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Junk()
     {
-        var action = new PlayerState
-            {
-                PhaseTwo = new PhaseTwo() { Choice = PhaseTwoChoice.Junk },
-                Phase = Phase.Two
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseTwo() {Choice = PhaseTwoChoice.Junk});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Call()
     {
-        var action = new PlayerState
-            {
-                PhaseTwo = new PhaseTwo() { Choice = PhaseTwoChoice.Call },
-                Phase = Phase.Two
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseTwo() {Choice = PhaseTwoChoice.Call});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task Roll()
     {
-        var action = new PlayerState
-            {
-                PhaseThree = new PhaseThree() { Choice = PhaseThreeChoice.DealerRoll },
-                Phase = Phase.Three
-            };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseThree() {Choice = PhaseThreeChoice.DiceRoll});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
     private async Task ClaimWin()
     {
-        var action = new PlayerState
-        {
-            PhaseThree = new PhaseThree() { Choice = PhaseThreeChoice.ClaimWin },
-            Phase = Phase.Three
-        };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseThree() {Choice = PhaseThreeChoice.Claim});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
-    private async Task AcknowledgeLoss()
+    private async Task Ready()
     {
-        var action = new PlayerState
-        {
-            PhaseThree = new PhaseThree() { Choice = PhaseThreeChoice.AcknowledgeLoss },
-            Phase = Phase.Three
-        };
-
-        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId, action);
+        var action = new PlayerAction(new PhaseThree() {Choice = PhaseThreeChoice.Ready});
+        await _sabaccSessionService.SubmitTurn(SessionId, PlayerId.Value, action);
     }
 
 }

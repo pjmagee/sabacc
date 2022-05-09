@@ -1,44 +1,42 @@
-﻿namespace Sabacc.Domain;
+﻿using System.Reflection;
+
+namespace Sabacc.Domain;
 
 public class PlayerViewModel
 {
-    public List<DeckView> Decks { get; set; }
-    public List<PlayerPublicView> Players { get; set; } = new();
-    public List<Pot> Pots { get; set; } = new();
-    public int Round { get; set; }
+    public List<DeckView> Decks { get; init; }
+    public List<PlayerPublicView> Players { get; init; } = new();
+    public List<Pot> Pots { get; init; } = new();
+    public Round Round { get; init; }
+    public Me Me { get; init; }
+    public Player? CurrentPlayer { get; init; }
+    public Player? CurrentDealer { get; init; }
+    public Dice Dice { get; init; }
+    public bool DiceRolled { get; init; }
+    public Phase Phase { get; set; }
+    public PlayerPublicView? Winner => Players.FirstOrDefault(p => p.Player.State.PhaseThree?.WonRound == true);
 
-    public Me Me { get; set; }
+    public bool IsMePhaseOne() => Me.MyTurn && Phase == Phase.One;
 
-    public Player? CurrentPlayer { get; set; }
-    public Player? CurrentDealer { get; set; }
-    public Dice Dice { get; set; }
-    public bool DiceRolled { get; set; }
+    public bool IsMePhaseTwo() => Me.MyTurn && Phase == Phase.Two;
 
-    public bool IsMePhaseOne() => Me.MyTurn && Me.Phase == Phase.One;
-
-    public bool IsMePhaseTwo() => Me.MyTurn && Me.Phase == Phase.Two;
-
-    public bool IsMePhaseThree() => Me.MyTurn && Me.Phase == Phase.Three && DiceRolled && !Me.Player.State.PhaseThree.Completed;
+    public bool IsMePhaseThree() => Me.MyTurn && Phase == Phase.Three && DiceRolled && !Me.Player.State.PhaseThree.Completed;
 
     public bool CanDiceRoll()
     {
-        return Me.Player.Equals(CurrentDealer) &&
-               Me.Phase == Phase.Three &&
-               Me.Player.State.PhaseThree.Result is null;
+        return Me.Player.Equals(CurrentDealer) && Phase == Phase.Three && Me.Player.State.PhaseThree.DiceRolled is null;
     }
 
     public bool CanCheck()
     {
-        return Me.MyTurn &&
-               Me.State.Phase == Phase.Two &&
-               Me.State.PhaseTwo.NoBets;
+        return Me.MyTurn && Phase == Phase.Two && Me.State.PhaseTwo.NoBets;
     }
 
     public bool CanGainOption1()
     {
         return Me.MyTurn &&
                !Me.State.PhaseOne.Completed && // Not completed
-               Me.State.Phase == Phase.One && // Is choosing phase
+               Phase == Phase.One && // Is choosing phase
                Me.State.PhaseOne.Choice != PhaseOneChoice.Gain2 && // Has not picked Gain2 option
                !Me.State.PhaseOne.SwapCardId.HasValue && // Swap card doesnt have a value
                !Me.State.PhaseOne.Gain1DrawnCardId.HasValue; // Has no gain1 drawn card
@@ -48,15 +46,13 @@ public class PlayerViewModel
     {
         return Me.MyTurn &&
                !Me.State.PhaseOne.Completed &&
-               Me.State.Phase == Phase.One &&
+               Phase == Phase.One &&
                !Me.State.PhaseOne.Gain1DrawnCardId.HasValue;
     }
 
     public bool CanGainOption2()
     {
-        return Me.MyTurn &&
-               !Me.State.PhaseOne.Completed &&
-               !Me.State.PhaseOne.Gain1DrawnCardId.HasValue;
+        return Me.MyTurn && !Me.State.PhaseOne.Completed && !Me.State.PhaseOne.Gain1DrawnCardId.HasValue;
     }
 
     public bool CanKeepOrDiscard(Card card)
@@ -66,50 +62,54 @@ public class PlayerViewModel
                card.Id == Me.State.PhaseOne.Gain1DrawnCardId;
     }
 
-    public bool CanStand() => Me.MyTurn && Me.State.Phase == Phase.One &&
+    public bool CanStand() => Me.MyTurn && Phase == Phase.One &&
                               !Me.State.PhaseOne.Completed &&
                               !Me.State.PhaseOne.Gain1DrawnCardId.HasValue;
 
     public bool CanCall()
     {
-        return Me.MyTurn && Me.State.Phase == Phase.Two && Me.State.PhaseTwo.NoBets == false;
+        return Me.MyTurn && Phase == Phase.Two && Me.State.PhaseTwo.NoBets == false;
     }
 
     public bool CanRaise()
     {
         // TODO: has the credits and not reached max raise limit?
-        return Me.MyTurn && Me.State.Phase == Phase.Two &&
+        return Me.MyTurn && Phase == Phase.Two &&
                Me.State.PhaseTwo.NoBets == false;
     }
 
     public bool CanBet()
     {
-        return Me.MyTurn && Me.State.Phase == Phase.Two && Me.State.PhaseTwo.NoBets;
+        return Me.MyTurn && Phase == Phase.Two && Me.State.PhaseTwo.NoBets;
     }
 
     public bool CanJunk()
     {
-        // TODO:
-        return Me.MyTurn && Me.State.Phase == Phase.Two;
+        return Me.MyTurn && Phase == Phase.Two && !Me.State.JunkedOut;
     }
 
-    public bool CanClaimHandPot()
+    public bool IsWinner()
     {
         return IsPhase3Pending() && Me.State.PhaseThree.WonRound;
     }
 
-    public bool CanAcknowledgeLoss()
+    public bool IsLoser()
     {
-        return IsPhase3Pending() && !Me.State.PhaseThree.WonRound && DiceRolled;
+        return IsPhase3Pending() && !Me.State.PhaseThree.WonRound && DiceRolled && !Dice.IsSabaccShift();
     }
 
-    public bool CanClaimSabaccPot()
+    public bool IsSabaccShift()
+    {
+        return IsPhase3Pending() && DiceRolled && Dice.IsSabaccShift();
+    }
+
+    public bool IsSabaccWinner()
     {
         return IsPhase3Pending() && Me.State.PhaseThree.WonRound && Me.State.PhaseThree.WonSabacc;
     }
 
     private bool IsPhase3Pending()
     {
-        return Me.Phase == Phase.Three && !Me.State.PhaseThree.Completed;
+        return Phase == Phase.Three && !Me.State.PhaseThree.Completed;
     }
 }

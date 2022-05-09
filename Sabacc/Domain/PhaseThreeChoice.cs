@@ -2,7 +2,7 @@
 
 public enum PhaseThreeChoice
 {
-    DealerRoll,
-    ClaimWin,
-    AcknowledgeLoss
+    DiceRoll,
+    Claim,
+    Ready
 }

@@ -8,7 +8,6 @@ public interface ISabaccSession
 {
     Guid Id { get; }
     public int Slots { get; }
-    public int Round { get; }
 
     IImmutableList<Guid> PlayerIds { get; }
     SabaccVariantType VariantType { get; }
@@ -20,5 +19,5 @@ public interface ISabaccSession
 
     PlayerViewModel GetPlayerView(Guid playerId);
     SpectatorView GetSpectateView();
-    Task PlayerTurn(Guid playerId, PlayerState playerState);
+    Task PlayerTurn(Guid playerId, PlayerAction action);
 }

@@ -15,69 +15,104 @@ public class HandTests : IClassFixture<HandsFixture>
     [Fact]
     public void Hand_Detects_RuleOfTwo()
     {
-        Assert.True(new Hand(_fixture.RuleOfTwo()).IsRuleOfTwo());
+        var hand = new Hand(_fixture.RuleOfTwo());
+        Assert.True(hand.IsRuleOfTwo());
+        Assert.Equal(HandType.RuleOfTwo, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_BanthasWild()
     {
-        Assert.True(new Hand(_fixture.BanthasWild()).IsBanthasWild());
+        var hand = new Hand(_fixture.BanthasWild());
+        Assert.True(hand.IsBanthasWild());
+        Assert.Equal(HandType.BanthasWild, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_StraightKhyron()
     {
-        Assert.True(new Hand(_fixture.StraightKhyron()).IsStraightKhyron());
+        var hand = new Hand(_fixture.StraightKhyron());
+        Assert.True(hand.IsStraightKhyron());
+        Assert.Equal(HandType.StraightKhyron, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_GeeWhizz()
     {
-        Assert.True(new Hand(_fixture.GeeWizz1()).IsGeeWhiz());
+        var hand = new Hand(_fixture.GeeWizz1());
+        Assert.True(hand.IsGeeWhiz());
+        Assert.Equal(HandType.GeeWhizz, hand.HandType);
 
-        Assert.True(new Hand(_fixture.GeeWizz2()).IsGeeWhiz());
+        hand = new Hand(_fixture.GeeWizz2());
+        Assert.True(hand.IsGeeWhiz());
+        Assert.Equal(HandType.GeeWhizz, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_Squadron()
     {
-        Assert.True(new Hand(_fixture.Squadron()).IsSquadron());
+        var hand = new Hand(_fixture.Squadron());
+        Assert.True(hand.IsSquadron());
+        Assert.Equal(HandType.Squadron, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_Rhylet()
     {
-        Assert.True(new Hand(_fixture.Rhylet()).IsRhylet());
+        var hand = new Hand(_fixture.Rhylet());
+        Assert.True(hand.IsRhylet());
+        Assert.Equal(HandType.Rhylet, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_YeeHaa()
     {
-        Assert.True(new Hand(_fixture.YeeHaa()).IsYeeHaa());
+        var hand = new Hand(_fixture.YeeHaa());
+        Assert.True(hand.IsYeeHaa());
+        Assert.Equal(HandType.YeeHaa, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_PrimeSabacc()
     {
-        Assert.True(new Hand(_fixture.PrimeSabacc()).IsPrimeSabacc());
+        var hand = new Hand(_fixture.PrimeSabacc());
+        Assert.True(hand.IsPrimeSabacc());
+        Assert.Equal(HandType.PrimeSabacc, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_Fleet()
     {
-        Assert.True(new Hand(_fixture.Fleet()).IsFleet());
+        var hand = new Hand(_fixture.Fleet());
+        Assert.True(hand.IsFleet());
+        Assert.Equal(HandType.Fleet, hand.HandType);
     }
-
 
     [Fact]
     public void Hand_Detects_FullSabacc()
     {
-        Assert.True(new Hand(_fixture.FullSabacc()).IsFullSabacc());
+        var hand = new Hand(_fixture.FullSabacc());
+        Assert.True(hand.IsFullSabacc());
+        Assert.Equal(HandType.FullSabacc, hand.HandType);
     }
 
     [Fact]
     public void Hand_Detects_PureSabacc()
     {
-        Assert.True(new Hand(_fixture.PureSabacc()).IsPureSabacc());
+        var hand = new Hand(_fixture.PureSabacc());
+        Assert.True(hand.IsPureSabacc());
+        Assert.Equal(HandType.PureSabacc, hand.HandType);
+    }
+
+    [Fact]
+    public void Hand_Detects_Nulrhek()
+    {
+        var hand = new Hand(_fixture.Nulrhek1());
+        Assert.True(hand.IsNulrhek());
+        Assert.Equal(HandType.Nulrhek, hand.HandType);
+
+        hand = new Hand(_fixture.Nulrhek2());
+        Assert.True(hand.IsNulrhek());
+        Assert.Equal(HandType.Nulrhek, hand.HandType);
     }
 }

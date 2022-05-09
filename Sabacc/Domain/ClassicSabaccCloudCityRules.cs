@@ -40,7 +40,7 @@ public class ClassicSabaccCloudCityRules : ISabaccSession
         throw new NotImplementedException();
     }
 
-    public async Task PlayerTurn(Guid playerId, PlayerState playerState)
+    public async Task PlayerTurn(Guid playerId, PlayerAction action)
     {
         throw new NotImplementedException();
     }

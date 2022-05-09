@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace Sabacc.Domain;
+﻿namespace Sabacc.Domain;
 
 public class PlayersCircularList : LinkedList<Player>
 {
@@ -18,6 +16,8 @@ public class PlayersCircularList : LinkedList<Player>
             AddLast(new Player(id, name));
         }
     }
+
+    public IEnumerable<Player> WithoutJunkedOut() => this.Where(p => p.State.JunkedOut == false);
 
     public bool InPhase1() => this.Any(p => p.State.PhaseOne.Completed == false);
     public bool InPhase2() => this.Any(p => !InPhase1() && p.State.PhaseTwo.Completed == false);
@@ -65,7 +65,23 @@ public class PlayersCircularList : LinkedList<Player>
 
         CurrentTurn = CurrentTurn.Next ?? First!;
 
-        if (CurrentTurn.Value.State.PhaseTwo.Choice == PhaseTwoChoice.Junk)
+        if (CurrentTurn.Value.State.JunkedOut)
             ShiftTurnToNext();
+    }
+
+    public void ResetPhaseCompletions(bool forNextRound = false)
+    {
+        foreach (var player in this.Where(p => !p.State.JunkedOut))
+        {
+            if (forNextRound)
+            {
+                // Players only Junk out per Round
+                player.State.JunkedOut = false;
+            }
+
+            player.State.PhaseOne.Reset();
+            player.State.PhaseTwo.Reset();
+            player.State.PhaseThree.Reset();
+        }
     }
 }

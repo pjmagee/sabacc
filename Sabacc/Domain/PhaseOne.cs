@@ -21,6 +21,17 @@ public class PhaseOne
 
     }
 
+    public void Reset()
+    {
+        Completed = false;
+        Choice = null;
+        SwapCardId = null;
+        Gain1KeepCardId = null;
+        Gain1DiscardCardId = null;
+        Gain1DrawnCardId = null;
+        Gain2Discard = null;
+    }
+
     public bool Gain1ShouldDraw() => !Gain1DrawnCardId.HasValue &&
                                      !Gain1KeepCardId.HasValue &&
                                      !Gain1DiscardCardId.HasValue;

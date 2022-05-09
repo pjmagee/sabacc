@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Immutable;
-
+﻿using System.Collections.Immutable;
 using Microsoft.AspNetCore.SignalR;
 
 using Sabacc.Hubs;
@@ -16,7 +14,20 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     public Player? CurrentPlayer => Players.CurrentTurn?.ValueRef;
     public Player? CurrentDealer => Players.CurrentDealer?.ValueRef;
 
-    public int Round { get; set; } = 1;
+    public Round Round { get; set; } = Round.One;
+
+    public Phase Phase
+    {
+        get
+        {
+            if (Players.Any(p => p.PhaseOneCompleted() == false)) return Phase.One;
+            if (Players.Any(p => p.PhaseTwoCompleted() == false)) return Phase.Two;
+            if (Players.Any(p => p.PhaseThreeCompleted() == false)) return Phase.Three;
+
+            throw new InvalidOperationException("Unhandled State for Phase.");
+        }
+    }
+
     public int Slots { get; private set; }
     public SabaccVariantType VariantType => SabaccVariantType.CorellianSpikeBlackSpireOutpostRules;
     public Guid Id { get; } = Guid.NewGuid();
@@ -70,26 +81,20 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
     private PlayerState GetNextState(Player player)
     {
-        player.State.MyTurn = player.Equals(CurrentPlayer);
+        player.State.CanPerformAction = player.Equals(CurrentPlayer);
 
-        List<PlayerState> states = Players.Select(p => p.State).ToList();
-
-        player.State.Phase = player.State.Phase switch
+        if (Phase == Phase.One)
         {
-            Phase.One => states.All(p => p.PhaseOne.Completed) ? Phase.Two : Phase.One,
-            Phase.Two => states.All(p => p.PhaseTwo.Completed) ? Phase.Three : Phase.Two,
-            Phase.Three => states.All(p => p.PhaseThree.Completed) ? Phase.One : Phase.Three
-        };
-
-        if (player.State.Phase == Phase.Three)
-        {
-            player.State.MyTurn = player.State.PhaseThree.Completed == false &&
-                                  player.State.PhaseThree.Choice == null;
+            // Nothing specific
         }
-
-        if (player.State.Phase == Phase.Two)
+        else if (Phase == Phase.Two)
         {
+            List<PlayerState> states = Players.Select(p => p.State).ToList();
             player.State.PhaseTwo.NoBets = !states.Any(s => s.PhaseTwo.Choice is PhaseTwoChoice.Bet or PhaseTwoChoice.Raise);
+        }
+        else if (Phase == Phase.Three)
+        {
+            player.State.CanPerformAction = !player.State.PhaseThree.Completed;
         }
 
         return player.State;
@@ -115,13 +120,13 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
                 });
             }
 
-            var view = new PlayerViewModel()
+            PlayerViewModel view = new PlayerViewModel()
             {
                 Decks = GetDeckViews(),
                 CurrentPlayer = Players.CurrentTurn?.ValueRef,
                 CurrentDealer = Players.CurrentDealer?.ValueRef,
                 Dice = Dice,
-                DiceRolled = Players.CurrentDealer?.ValueRef.State.PhaseThree.Result is not null,
+                DiceRolled = Players.CurrentDealer?.ValueRef.State.PhaseThree.DiceRolled is not null,
                 Me = new Me()
                 {
                     Player = me,
@@ -129,7 +134,8 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
                 },
                 Players = players,
                 Pots = new List<Pot>(new[] { HandPot, SabaccPot }),
-                Round = Round
+                Round = Round,
+                Phase = Phase
             };
 
             return view;
@@ -166,75 +172,127 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         return new SpectatorView();
     }
 
-    public async Task PlayerTurn(Guid playerId, PlayerState action)
+    public async Task PlayerTurn(Guid playerId, PlayerAction action)
     {
         Player player = Players.Single(p => p.Id == playerId);
 
-        switch (action.Phase)
-        {
-            case Phase.One: HandlePhaseOne(player, action); break;
-            case Phase.Two: HandlePhaseTwo(player, action); break;
-            case Phase.Three: HandlePhaseThree(player, action); break;
-        }
+        if (action.PhaseOne is not null) HandlePhaseOne(player, action);
+        else if (action.PhaseTwo is not null) HandlePhaseTwo(player, action);
+        else if (action.PhaseThree is not null) HandlePhaseThree(player, action);
 
         await NotifyAsync().ConfigureAwait(false);
     }
 
-    private void HandlePhaseThree(Player player, PlayerState action)
+    private void HandlePhaseThree(Player player, PlayerAction action)
     {
-        if (action.PhaseThree.Choice == PhaseThreeChoice.DealerRoll)
+        if (action.IsDiceRoll()) HandleDiceRoll(player);
+        else if (action.IsClaim()) HandleClaim(player);
+        else if (action.IsReady()) HandleReady(player);
+
+        // Essentially, we allow players to review and acknowledge cards before just shuffling everything
+        // otherwise its a bit boring if it automates so fast
+        if (Dice.IsSabaccShift() && Players.WithoutJunkedOut().All(p => p.PhaseThreeCompleted()))
         {
-            Dice.Roll();
-
-            player.State.PhaseThree.Choice = PhaseThreeChoice.DealerRoll;
-            player.State.PhaseThree.Result = Dice.Sides;
-            player.State.PhaseThree.IsSabaccShift = Dice.IsSabaccShift();
-
-            if (Dice.IsSabaccShift())
-            {
-
-            }
-            else
-            {
-                CalculateWinner();
-            }
+            StartSabaccShift();
         }
-        else if (action.PhaseThree.Choice == PhaseThreeChoice.ClaimWin)
+        else if (Players.WithoutJunkedOut().All(p => p.PhaseThreeCompleted()))
         {
-            player.State.PhaseThree.Choice = action.PhaseThree.Choice;
-            player.TakeCredits(HandPot);
-
-            if (player.State.PhaseThree.WonSabacc)
-            {
-                player.TakeCredits(SabaccPot);
-            }
+            StartNextRound();
         }
-        else if (action.PhaseThree.Choice == PhaseThreeChoice.AcknowledgeLoss)
-        {
-            player.State.PhaseThree.Choice = action.PhaseThree.Choice;
-        }
-
     }
 
-    private void CalculateWinner()
+    private void HandleReady(Player player)
     {
-        _winnerCalculator.Calculate(Players);
+        player.State.PhaseThree.Choice = PhaseThreeChoice.Ready;
+        player.State.PhaseThree.Completed = true;
     }
 
-    private void HandlePhaseOne(Player player, PlayerState action)
+    private void HandleClaim(Player player)
+    {
+        player.State.PhaseThree.Choice = PhaseThreeChoice.Claim;
+        player.TakeCredits(HandPot);
+
+        if (player.State.PhaseThree.WonSabacc)
+        {
+            player.TakeCredits(SabaccPot);
+        }
+
+        player.State.PhaseThree.Completed = true;
+    }
+
+    private void HandleDiceRoll(Player player)
+    {
+        Dice.Roll();
+
+        player.State.PhaseThree.Choice = PhaseThreeChoice.DiceRoll;
+        player.State.PhaseThree.DiceRolled = Dice.Sides!.Select(x => x).ToArray();
+
+        if (!Dice.IsSabaccShift())
+        {
+            CalculateWinner();
+        }
+    }
+
+    private void StartNextRound()
+    {
+        Round = Round switch { Round.One => Round.Two, Round.Two => Round.Three, _ => Round.One };
+        Players.ShiftDealerToNext();
+        Players.ResetPhaseCompletions(forNextRound: true);
+        AddAnte();
+    }
+
+    private void StartSabaccShift()
+    {
+        Players.ResetPhaseCompletions(forNextRound: false);
+
+        Dictionary<Player, int> playerCardsCount = Players.WithoutJunkedOut().ToDictionary(player => player, player => player.Hand.Count);
+
+        // TODO: The player left of the dealer is always first to recieve new cards
+        // Do we really care for this rule about the Sabacc Shift?? (I mean, the deck is shuffled...)
+        foreach (var player in Players.WithoutJunkedOut())
+        {
+            player.ShuffleHand();
+            DiscardPile.AddCards(player.Hand);
+            player.Hand.Clear();
+
+            while (player.Hand.Count != playerCardsCount[player])
+            {
+                player.Hand.Add(TakeTop());
+            }
+
+            // Then place the rest of the deck face down on the table
+            // Flip over the top card from the main deck to the discard pile
+            // to start it with a new random value
+            DiscardPile.AddCards(MainDeck.TakeTop());
+        }
+    }
+
+    private Card TakeTop()
+    {
+        if (MainDeck.ViewTop() is null)
+        {
+            MainDeck.AddCards(DiscardPile.TakeTop(DiscardPile.Cards.Count));
+            MainDeck.Shuffle();
+            DiscardPile.AddCards(MainDeck.TakeTop());
+        }
+
+        return MainDeck.TakeTop(1).First();
+    }
+
+    private void CalculateWinner() => _winnerCalculator.Calculate(Players);
+
+    private void HandlePhaseOne(Player player, PlayerAction action)
     {
         if (action.IsStand())
         {
             player.State.PhaseOne.Completed = true;
             player.State.PhaseOne.Choice = PhaseOneChoice.Stand;
-
-            SetNextTurn();
         }
         else if (action.IsSwap())
         {
             player.PlaceCredits(HandPot, 2);
 
-            Card card = player.Hand.Find(f => f.Id == action.PhaseOne.SwapCardId)!;
+            Card card = player.Hand.Find(f => f.Id == action.PhaseOne!.SwapCardId)!;
 
             player.Hand.Remove(card);
             player.Hand.Add(DiscardPile.TakeTop());
@@ -242,37 +300,30 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
             player.State.PhaseOne.Completed = true;
             player.State.PhaseOne.Choice = PhaseOneChoice.Swap;
-
-            SetNextTurn();
         }
         else if (action.IsGain1())
         {
-            if (action.PhaseOne.Gain1ShouldDraw())
+            if (action.PhaseOne!.Gain1ShouldDraw())
             {
-                Card card = MainDeck.TakeTop();
-
+                Card card = TakeTop();
                 player.PlaceCredits(HandPot, credits: 1);
                 player.Hand.Add(card);
                 player.State.PhaseOne.Gain1DrawnCardId = card.Id;
+                return;
             }
-            else if (action.PhaseOne.Gain1DiscardCardId.HasValue)
+
+            if (action.PhaseOne.Gain1DiscardCardId.HasValue)
             {
                 Card card = player.Hand.Find(card => card.Id == action.PhaseOne.Gain1DiscardCardId)!;
-
                 player.Hand.Remove(card);
                 DiscardPile.Cards.Push(card);
-
                 player.State.PhaseOne.Completed = true;
                 player.State.PhaseOne.Choice = PhaseOneChoice.Gain1;
-
-                SetNextTurn();
             }
             else if (action.PhaseOne.Gain1KeepCardId.HasValue)
             {
                 player.State.PhaseOne.Completed = true;
                 player.State.PhaseOne.Choice = PhaseOneChoice.Gain1;
-
-                SetNextTurn();
             }
         }
         else if (action.IsGain2())
@@ -280,64 +331,86 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
             Card card = player.Hand.Find(card => card.Id == action.PhaseOne.Gain2Discard.Value)!;
             player.Hand.Remove(card);
             DiscardPile.Cards.Push(card);
-            player.Hand.Add(MainDeck.TakeTop());
+            player.Hand.Add(TakeTop());
             player.State.PhaseOne.Completed = true;
             player.State.PhaseOne.Choice = PhaseOneChoice.Gain2;
+        }
 
-            SetNextTurn();
+        SetNextTurn();
+    }
+
+    private void HandlePhaseTwo(Player player, PlayerAction action)
+    {
+        switch (action.PhaseTwo!.Choice)
+        {
+            case PhaseTwoChoice.Check:
+                HandleCheck(player);
+                break;
+            case PhaseTwoChoice.Bet:
+                HandleBet(player, action.PhaseTwo.Credits);
+                break;
+            case PhaseTwoChoice.Junk:
+                HandleJunk(player);
+                break;
+            case PhaseTwoChoice.Call:
+                HandleCall(player);
+                break;
+            case PhaseTwoChoice.Raise:
+                HandleRaise(player, action.PhaseTwo.Credits);
+                break;
+        }
+
+        SetNextTurn();
+    }
+
+    private void HandleCheck(Player player)
+    {
+        player.State.PhaseTwo.Choice = PhaseTwoChoice.Check;
+        player.State.PhaseTwo.Completed = true;
+    }
+
+    private void HandleBet(Player player, int credits)
+    {
+        player.State.PhaseTwo.Choice = PhaseTwoChoice.Bet;
+        player.State.PhaseTwo.Credits = credits;
+        player.State.PhaseTwo.Completed = true;
+        player.PlaceCredits(HandPot, credits);
+
+        foreach (var other in Players.WithoutJunkedOut().Where(p => !p.Equals(player)))
+        {
+            other.State.PhaseTwo.Completed = false;
         }
     }
 
-    private void HandlePhaseTwo(Player player, PlayerState action)
+    private void HandleJunk(Player player)
     {
-        if (action.PhaseTwo.Choice == PhaseTwoChoice.Check)
+        player.ShuffleHand();
+        DiscardPile.AddCards(player.Hand);
+        player.Hand.Clear();
+        player.State.JunkedOut = true;
+    }
+
+    private void HandleRaise(Player player, int credits)
+    {
+        player.State.PhaseTwo.Choice = PhaseTwoChoice.Raise;
+        player.State.PhaseTwo.Credits = credits;
+        player.State.PhaseTwo.Completed = true;
+        player.PlaceCredits(HandPot, credits);
+
+        foreach (var other in Players.WithoutJunkedOut().Where(p => !p.Equals(player)))
         {
-            player.State.PhaseTwo.Choice = PhaseTwoChoice.Check;
-            player.State.PhaseTwo.Completed = true;
-            SetNextTurn();
+            other.State.PhaseTwo.Completed = false;
         }
-        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Bet)
-        {
-            player.State.PhaseTwo.Choice = PhaseTwoChoice.Bet;
-            player.State.PhaseTwo.Credits = action.PhaseTwo.Credits;
-            player.State.PhaseTwo.Completed = true;
-            player.PlaceCredits(HandPot, action.PhaseTwo.Credits);
+    }
 
-            foreach (var other in Players.Where(p => !p.Equals(player)))
-            {
-                other.State.PhaseTwo.Completed = false;
-            }
+    private void HandleCall(Player player)
+    {
+        int match = HandPot.Highest.Values.Max();
 
-            SetNextTurn();
-        }
-        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Junk)
-        {
-            player.ShuffleHand();
-            DiscardPile.AddCards(player.Hand);
-            player.Hand.Clear();
-
-            SetNextTurn();
-        }
-        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Call)
-        {
-            int match = HandPot.Highest.Values.Max();
-
-            player.State.PhaseTwo.Choice = PhaseTwoChoice.Call;
-            player.State.PhaseTwo.Credits = match;
-            player.State.PhaseTwo.Completed = true;
-            player.PlaceCredits(HandPot, match);
-
-            SetNextTurn();
-        }
-        else if (action.PhaseTwo.Choice == PhaseTwoChoice.Raise)
-        {
-            player.State.PhaseTwo.Choice = PhaseTwoChoice.Raise;
-            player.State.PhaseTwo.Credits = action.PhaseTwo.Credits;
-            player.State.PhaseTwo.Completed = true;
-            player.PlaceCredits(HandPot, action.PhaseTwo.Credits);
-
-            SetNextTurn();
-        }
+        player.State.PhaseTwo.Choice = PhaseTwoChoice.Call;
+        player.State.PhaseTwo.Credits = match;
+        player.State.PhaseTwo.Completed = true;
+        player.PlaceCredits(HandPot, match);
     }
 
     private void SetNextTurn()
@@ -366,7 +439,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         Players.SetFirstRoundTurn();
         AddAnte();
         DealCards();
-        Round = 1;
+        Round = Round.One;
     }
 
     private void DealCards()
@@ -386,7 +459,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         DiscardPile.AddCards(MainDeck.TakeTop());
     }
 
-    public void AddAnte()
+    private void AddAnte()
     {
         foreach (var player in Players)
         {

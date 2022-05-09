@@ -8,6 +8,20 @@ namespace Sabacc.Tests;
 
 public class HandsFixture
 {
+    public IEnumerable<Card> Nulrhek1()
+    {
+        yield return new Card() { Value = -1 };
+        yield return new Card() { Value = -2 };
+        yield return new Card() { Value = -10 };
+    }
+
+    public IEnumerable<Card> Nulrhek2()
+    {
+        yield return new Card() { Value = 1 };
+        yield return new Card() { Value = 2 };
+        yield return new Card() { Value = 10 };
+    }
+
     public IEnumerable<Card> PureSabacc()
     {
         yield return new Card() { Value = 0 };

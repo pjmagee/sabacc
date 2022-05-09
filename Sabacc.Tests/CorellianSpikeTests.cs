@@ -45,8 +45,8 @@ namespace Sabacc.Tests
 
             Assert.Equal(SessionStatus.Open, sabacc.Status);
 
-            sabacc.JoinSession(player1, "P1");
-            sabacc.JoinSession(player2, "P2");
+            sabacc.JoinSession(player1, "P1").Wait();
+            sabacc.JoinSession(player2, "P2").Wait();
 
             Assert.Equal(SessionStatus.Started, sabacc.Status);
         }
@@ -63,8 +63,8 @@ namespace Sabacc.Tests
             sabacc.SetSlots(2);
 
             Assert.Null(sabacc.CurrentDealer);
-            sabacc.JoinSession(player1, "P1");
-            sabacc.JoinSession(player2, "P2");
+            sabacc.JoinSession(player1, "P1").Wait();
+            sabacc.JoinSession(player2, "P2").Wait();
             Assert.NotNull(sabacc.CurrentDealer);
         }
 
@@ -82,8 +82,8 @@ namespace Sabacc.Tests
 
             Assert.Null(sabacc.CurrentPlayer);
 
-            sabacc.JoinSession(player1, "P1");
-            sabacc.JoinSession(player2, "P2");
+            sabacc.JoinSession(player1, "P1").Wait();
+            sabacc.JoinSession(player2, "P2").Wait();
 
             Assert.NotNull(sabacc.CurrentPlayer);
         }
@@ -100,8 +100,8 @@ namespace Sabacc.Tests
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
 
-            sabacc.JoinSession(player1, "P1");
-            sabacc.JoinSession(player2, "P2");
+            sabacc.JoinSession(player1, "P1").Wait();
+            sabacc.JoinSession(player2, "P2").Wait();
 
             Assert.Equal(sabacc.Players.CurrentTurn, sabacc.Players.CurrentDealer.Next);
         }
@@ -117,8 +117,8 @@ namespace Sabacc.Tests
             var winningCalculator = new Mock<IWinnerCalculator>();
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
-            sabacc.JoinSession(player1, "P1");
-            sabacc.JoinSession(player2, "P2");
+            sabacc.JoinSession(player1, "P1").Wait(); ;
+            sabacc.JoinSession(player2, "P2").Wait(); ;
 
             Assert.Equal(57, sabacc.MainDeck.Cards.Count);
             Assert.Equal(1, sabacc.DiscardPile.Cards.Count);
@@ -137,8 +137,8 @@ namespace Sabacc.Tests
             var winningCalculator = new Mock<IWinnerCalculator>();
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
-            sabacc.JoinSession(player1, "P1");
-            sabacc.JoinSession(player2, "P2");
+            sabacc.JoinSession(player1, "P1").Wait();
+            sabacc.JoinSession(player2, "P2").Wait();
 
             var view = sabacc.GetPlayerView(sabacc.CurrentPlayer.Id);
 
@@ -156,8 +156,8 @@ namespace Sabacc.Tests
             var winningCalculator = new Mock<IWinnerCalculator>();
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
             sabacc.SetSlots(2);
-            sabacc.JoinSession(Guid.NewGuid(), "P1");
-            sabacc.JoinSession(Guid.NewGuid(), "P2");
+            sabacc.JoinSession(Guid.NewGuid(), "P1").Wait();
+            sabacc.JoinSession(Guid.NewGuid(), "P2").Wait();
 
             var player1 = sabacc.CurrentPlayer.Id;
 
@@ -168,15 +168,8 @@ namespace Sabacc.Tests
             Assert.True(view.CanSwap());
             Assert.True(view.CanStand());
 
-            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-            {
-                PhaseOne = new PhaseOne()
-                {
-                    Choice = PhaseOneChoice.Swap,
-                    SwapCardId = view.Me.Hand[0].Id
-                },
-                Phase = Phase.One
-            });
+            var action = new PlayerAction(new PhaseOne() { Choice = PhaseOneChoice.Swap, SwapCardId = view.Me.Hand[0].Id });
+            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, action).Wait();
 
             view = sabacc.GetPlayerView(player1);
 
@@ -195,8 +188,8 @@ namespace Sabacc.Tests
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
 
             sabacc.SetSlots(2);
-            sabacc.JoinSession(Guid.NewGuid(), "P1");
-            sabacc.JoinSession(Guid.NewGuid(), "P2");
+            sabacc.JoinSession(Guid.NewGuid(), "P1").Wait();
+            sabacc.JoinSession(Guid.NewGuid(), "P2").Wait();
 
             var player1 = sabacc.CurrentPlayer.Id;
 
@@ -207,14 +200,7 @@ namespace Sabacc.Tests
             Assert.True(view.CanSwap());
             Assert.True(view.CanStand());
 
-            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-            {
-                PhaseOne = new PhaseOne()
-                {
-                    Choice = PhaseOneChoice.Gain1
-                },
-                Phase = Phase.One
-            });
+            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerAction(new PhaseOne { Choice = PhaseOneChoice.Gain1 })).Wait();
 
             view = sabacc.GetPlayerView(player1);
 
@@ -235,8 +221,8 @@ namespace Sabacc.Tests
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
 
             sabacc.SetSlots(2);
-            sabacc.JoinSession(Guid.NewGuid(), "P1");
-            sabacc.JoinSession(Guid.NewGuid(), "P2");
+            sabacc.JoinSession(Guid.NewGuid(), "P1").Wait();
+            sabacc.JoinSession(Guid.NewGuid(), "P2").Wait();
 
             var player1 = sabacc.CurrentPlayer.Id;
 
@@ -247,15 +233,8 @@ namespace Sabacc.Tests
             Assert.True(view.CanSwap());
             Assert.True(view.CanStand());
 
-            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-            {
-                PhaseOne = new PhaseOne()
-                {
-                    Choice = PhaseOneChoice.Gain2,
-                    Gain2Discard = view.Me.Hand[0].Id
-                },
-                Phase = Phase.One
-            });
+            var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Gain2) {Gain2Discard = view.Me.Hand[0].Id});
+            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, action).Wait();
 
             view = sabacc.GetPlayerView(player1);
 
@@ -274,8 +253,8 @@ namespace Sabacc.Tests
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
 
             sabacc.SetSlots(2);
-            sabacc.JoinSession(Guid.NewGuid(), "P1");
-            sabacc.JoinSession(Guid.NewGuid(), "P2");
+            sabacc.JoinSession(Guid.NewGuid(), "P1").Wait();
+            sabacc.JoinSession(Guid.NewGuid(), "P2").Wait();
 
             var player1 = sabacc.CurrentPlayer.Id;
 
@@ -286,14 +265,7 @@ namespace Sabacc.Tests
             Assert.True(view.CanSwap());
             Assert.True(view.CanStand());
 
-            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-            {
-                PhaseOne = new PhaseOne()
-                {
-                    Choice = PhaseOneChoice.Gain1
-                },
-                Phase = Phase.One
-            });
+            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerAction(new PhaseOne(PhaseOneChoice.Gain1))).Wait();
 
             view = sabacc.GetPlayerView(player1);
 
@@ -316,8 +288,8 @@ namespace Sabacc.Tests
             var sabacc = new CorellianSpikeBlackSpireOutpostRules(hubContext.Object, winningCalculator.Object);
 
             sabacc.SetSlots(2);
-            sabacc.JoinSession(Guid.NewGuid(), "P1");
-            sabacc.JoinSession(Guid.NewGuid(), "P2");
+            sabacc.JoinSession(Guid.NewGuid(), "P1").Wait();
+            sabacc.JoinSession(Guid.NewGuid(), "P2").Wait();
 
             var player1 = sabacc.CurrentPlayer.Id;
 
@@ -328,14 +300,7 @@ namespace Sabacc.Tests
             Assert.True(view.CanSwap());
             Assert.True(view.CanStand());
 
-            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-            {
-                PhaseOne = new PhaseOne()
-                {
-                    Choice = PhaseOneChoice.Stand
-                },
-                Phase = Phase.One
-            });
+            sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerAction(new PhaseOne(PhaseOneChoice.Stand))).Wait();
 
             view = sabacc.GetPlayerView(player1);
 
@@ -366,26 +331,20 @@ namespace Sabacc.Tests
 
             foreach (var id in ids)
             {
-                sabacc.JoinSession(id, id.ToString());
+                sabacc.JoinSession(id, id.ToString()).Wait();
             }
 
             Assert.All(ids, playerId => sabacc.PlayerIds.Contains(playerId));
 
             for (int i = 0; i < ids.Count; i++)
             {
-                sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-                {
-                    PhaseOne = new PhaseOne()
-                    {
-                        Choice = PhaseOneChoice.Stand
-                    },
-                    Phase = Phase.One
-                });
+                var action = new PlayerAction(new PhaseOne(PhaseOneChoice.Stand));
+                sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, action).Wait();
             }
 
             var view = sabacc.GetPlayerView(sabacc.CurrentPlayer.Id);
 
-            Assert.Equal(Phase.Two, view.Me.Phase);
+            Assert.Equal(Phase.Two, view.Phase);
         }
 
         [InlineData(2)]
@@ -409,18 +368,14 @@ namespace Sabacc.Tests
 
             foreach (var id in ids)
             {
-                sabacc.JoinSession(id, id.ToString());
+                sabacc.JoinSession(id, id.ToString()).Wait();
             }
 
             Assert.All(ids, playerId => sabacc.PlayerIds.Contains(playerId));
 
             for (int i = 0; i < ids.Count; i++)
             {
-                sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-                {
-                    PhaseOne = new PhaseOne(PhaseOneChoice.Stand),
-                    Phase = Phase.One
-                });
+                sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerAction(new PhaseOne(PhaseOneChoice.Stand))).Wait();
             }
 
             foreach (var view in sabacc.PlayerIds.Select(id => sabacc.GetPlayerView(id)))
@@ -430,11 +385,8 @@ namespace Sabacc.Tests
 
             for (int i = 0; i < ids.Count; i++)
             {
-                sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, new PlayerState()
-                {
-                    PhaseTwo = new PhaseTwo() { Choice = PhaseTwoChoice.Check },
-                    Phase = Phase.Two
-                });
+                var action = new PlayerAction(new PhaseTwo {Choice = PhaseTwoChoice.Check});
+                sabacc.PlayerTurn(sabacc.CurrentPlayer.Id, action).Wait();
             }
 
             // If everyone has checked, then all have completed phase 2

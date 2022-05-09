@@ -11,7 +11,7 @@ namespace Sabacc.Tests;
 public class WinningCalculatorTests : IClassFixture<HandsFixture>
 {
     private readonly HandsFixture _handsFixture;
-    private WinnerCalculator _winnerCalculator;
+    private readonly WinnerCalculator _winnerCalculator;
 
     public WinningCalculatorTests(HandsFixture handsFixture)
     {
@@ -26,8 +26,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.FullSabacc());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.PureSabacc());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.FullSabacc());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.PureSabacc());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -42,8 +42,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.Fleet());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.FullSabacc());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.Fleet());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.FullSabacc());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -58,8 +58,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.PrimeSabacc());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.Fleet());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.PrimeSabacc());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.Fleet());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -74,8 +74,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.YeeHaa());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.PrimeSabacc());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.YeeHaa());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.PrimeSabacc());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -90,8 +90,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.Rhylet());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.YeeHaa());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.Rhylet());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.YeeHaa());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -122,8 +122,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.GeeWizz1());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.Squadron());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.GeeWizz1());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.Squadron());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -138,8 +138,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.StraightKhyron());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.GeeWizz1());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.StraightKhyron());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.GeeWizz1());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -154,8 +154,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.BanthasWild());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.StraightKhyron());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.BanthasWild());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.StraightKhyron());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -170,8 +170,8 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(_handsFixture.RuleOfTwo());
-        players.Last.ValueRef.Hand.AddRange(_handsFixture.BanthasWild());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.RuleOfTwo());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.BanthasWild());
 
         var winner = _winnerCalculator.Calculate(players);
 
@@ -180,18 +180,34 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
     }
 
     [Fact]
-    public void Nulrhek_Closest_To_Zero_Beats_Other_Nulrhek()
+    public void Nulrhek_WithMoreCards_Beats_OtherNulrhek()
     {
         var players = new PlayersCircularList();
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First.ValueRef.Hand.AddRange(new [] { new Card(){ Value = 2 } });
-        players.Last.ValueRef.Hand.AddRange(new[] { new Card() { Value = 1 } });
+        players.First!.ValueRef.Hand.AddRange(new[] { new Card { Value = 2 }, new Card { Value = 2 } });
+        players.Last!.ValueRef.Hand.AddRange(new[] { new Card { Value = 1 }, new Card { Value = 1 }, new Card { Value = 2 } });
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.BanthasWild, winner.Hand.HandType);
+        Assert.Equal(HandType.Nulrhek, winner.Hand.HandType);
+        Assert.Equal(players.Last.Value, winner);
+    }
+
+    [Fact]
+    public void Nulrhek_ClosestToZero_Beats_OtherNulrhek()
+    {
+        var players = new PlayersCircularList();
+        players.Join(Guid.NewGuid(), "Loser");
+        players.Join(Guid.NewGuid(), "Winner");
+
+        players.First!.ValueRef.Hand.AddRange(new[] { new Card { Value = 1 }, new Card { Value = 1 }, new Card { Value = 2 } });
+        players.Last!.ValueRef.Hand.AddRange(new[] { new Card { Value = 2 }, new Card { Value = -3 } });
+
+        var winner = _winnerCalculator.Calculate(players);
+
+        Assert.Equal(HandType.Nulrhek, winner.Hand.HandType);
         Assert.Equal(players.Last.Value, winner);
     }
 }

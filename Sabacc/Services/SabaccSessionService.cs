@@ -48,10 +48,10 @@ namespace Sabacc.Services
             return Sessions.Select(session => new SabaccSessionListItem(session)).ToList();
         }
 
-        public async Task SubmitTurn(Guid sessionId, Guid playerId, PlayerState playerState)
+        public async Task SubmitTurn(Guid sessionId, Guid playerId, PlayerAction action)
         {
             var session = Sessions.Find(sesson => sesson.Id == sessionId && sesson.PlayerIds.Contains(playerId))!;
-            await session.PlayerTurn(playerId, playerState).ConfigureAwait(false);
+            await session.PlayerTurn(playerId, action).ConfigureAwait(false);
         }
     }
 }

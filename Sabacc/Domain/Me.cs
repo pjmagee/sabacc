@@ -6,6 +6,5 @@ public class Me
     public int Credits => Player.Credits;
     public List<Card> Hand => Player.Hand;
     public PlayerState State { get; set; }
-    public bool MyTurn => State.MyTurn;
-    public Phase Phase => State.Phase;
+    public bool MyTurn => State.CanPerformAction;
 }
