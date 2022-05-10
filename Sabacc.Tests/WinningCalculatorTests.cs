@@ -1,7 +1,4 @@
 using System;
-
-using AutoFixture;
-
 using Sabacc.Domain;
 
 using Xunit;
@@ -31,7 +28,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.PureSabacc, winner.Hand.HandType);
+        Assert.Equal(HandRank.PureSabacc, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -47,7 +44,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.FullSabacc, winner.Hand.HandType);
+        Assert.Equal(HandRank.FullSabacc, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -63,7 +60,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.Fleet, winner.Hand.HandType);
+        Assert.Equal(HandRank.Fleet, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -79,7 +76,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.PrimeSabacc, winner.Hand.HandType);
+        Assert.Equal(HandRank.PrimeSabacc, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -95,7 +92,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.YeeHaa, winner.Hand.HandType);
+        Assert.Equal(HandRank.YeeHaa, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -111,7 +108,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.Rhylet, winner.Hand.HandType);
+        Assert.Equal(HandRank.Rhylet, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -127,7 +124,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.Squadron, winner.Hand.HandType);
+        Assert.Equal(HandRank.Squadron, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -143,7 +140,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.GeeWhizz, winner.Hand.HandType);
+        Assert.Equal(HandRank.GeeWhizz, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -159,7 +156,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.StraightKhyron, winner.Hand.HandType);
+        Assert.Equal(HandRank.StraightKhyron, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -170,12 +167,28 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
         players.Join(Guid.NewGuid(), "Loser");
         players.Join(Guid.NewGuid(), "Winner");
 
-        players.First!.ValueRef.Hand.AddRange(_handsFixture.RuleOfTwo());
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.RuleOfTwo1());
         players.Last!.ValueRef.Hand.AddRange(_handsFixture.BanthasWild());
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.BanthasWild, winner.Hand.HandType);
+        Assert.Equal(HandRank.BanthasWild, winner.Hand.HandRank);
+        Assert.Equal(players.Last.Value, winner);
+    }
+
+    [Fact]
+    public void BanthasWild_Beats_RuleOfTwo2()
+    {
+        var players = new PlayersCircularList();
+        players.Join(Guid.NewGuid(), "Loser");
+        players.Join(Guid.NewGuid(), "Winner");
+
+        players.First!.ValueRef.Hand.AddRange(_handsFixture.RuleOfTwo2());
+        players.Last!.ValueRef.Hand.AddRange(_handsFixture.BanthasWild());
+
+        var winner = _winnerCalculator.Calculate(players);
+
+        Assert.Equal(HandRank.BanthasWild, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -191,7 +204,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.Nulrhek, winner.Hand.HandType);
+        Assert.Equal(HandRank.Nulrhek, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -207,7 +220,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandType.Nulrhek, winner.Hand.HandType);
+        Assert.Equal(HandRank.Nulrhek, winner.Hand.HandRank);
         Assert.Equal(players.Last.Value, winner);
     }
 }

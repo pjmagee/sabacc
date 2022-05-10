@@ -14,9 +14,23 @@ public static class Extensions
         };
     }
 
-    public static string ToDisplayName(this HandType handType)
+    public static string ToDisplayName(this NulrhekRank? rank)
     {
-        var text = handType.ToString();
+        if (rank is null) return string.Empty;
+
+        return rank switch
+        {
+            NulrhekRank.ClosestToZero => "Closest to Zero",
+            NulrhekRank.PositiveScore => "Positive Score",
+            NulrhekRank.PositiveScoreWithMostCards => "Positive with most cards",
+            NulrhekRank.PositiveScoreWithHighestTotalOfAllPositiveCards => "Highest total of positive cards",
+            NulrhekRank.PositiveScoreWithHighestSinglePositiveCardValue => "Highest single positive card"
+        };
+    }
+
+    public static string ToDisplayName(this HandRank handRank)
+    {
+        var text = handRank.ToString();
         var sb = new StringBuilder();
 
         for (int i = 0; i < text.Length; i++)

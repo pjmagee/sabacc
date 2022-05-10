@@ -17,7 +17,7 @@ public class PlayersCircularList : LinkedList<Player>
         }
     }
 
-    public IEnumerable<Player> WithoutJunkedOut() => this.Where(p => p.State.JunkedOut == false);
+    public IEnumerable<Player> WithoutJunked() => this.Where(p => p.State.JunkedOut == false);
 
     public bool InPhase1() => this.Any(p => p.State.PhaseOne.Completed == false);
     public bool InPhase2() => this.Any(p => !InPhase1() && p.State.PhaseTwo.Completed == false);

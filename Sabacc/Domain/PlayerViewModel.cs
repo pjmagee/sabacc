@@ -22,6 +22,12 @@ public class PlayerViewModel
 
     public bool IsMePhaseThree() => Me.MyTurn && Phase == Phase.Three && DiceRolled && !Me.Player.State.PhaseThree.Completed;
 
+
+    public bool IsShowdown()
+    {
+        return Me.MyTurn && Round == Round.Three && Phase == Phase.Three && DiceRolled;
+    }
+
     public bool CanDiceRoll()
     {
         return Me.Player.Equals(CurrentDealer) && Phase == Phase.Three && Me.Player.State.PhaseThree.DiceRolled is null;

@@ -1,6 +1,6 @@
 ﻿namespace Sabacc.Domain;
 
-public enum HandType
+public enum HandRank
 {
     PureSabacc = 0,
     FullSabacc = 1,

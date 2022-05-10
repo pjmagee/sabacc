@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+
 using Microsoft.AspNetCore.SignalR;
 
 using Sabacc.Hubs;
@@ -189,17 +190,21 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         else if (action.IsClaim()) HandleClaim(player);
         else if (action.IsReady()) HandleReady(player);
 
-        // Essentially, we allow players to review and acknowledge cards before just shuffling everything
-        // otherwise its a bit boring if it automates so fast
-        if (Dice.IsSabaccShift() && Players.WithoutJunkedOut().All(p => p.PhaseThreeCompleted()))
+        if (IsSabaccShift)
         {
             StartSabaccShift();
         }
-        else if (Players.WithoutJunkedOut().All(p => p.PhaseThreeCompleted()))
+        else if (IsShowdown)
+        {
+            CalculateWinner();
+        }
+        else
         {
             StartNextRound();
         }
     }
+
+    public bool IsSabaccShift => Dice.IsSabaccShift() && Players.WithoutJunked().All(p => p.PhaseThreeCompleted());
 
     private void HandleReady(Player player)
     {
@@ -226,16 +231,15 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
         player.State.PhaseThree.Choice = PhaseThreeChoice.DiceRoll;
         player.State.PhaseThree.DiceRolled = Dice.Sides!.Select(x => x).ToArray();
-
-        if (!Dice.IsSabaccShift())
-        {
-            CalculateWinner();
-        }
     }
+
+    private bool IsShowdown => !Dice.IsSabaccShift() &&
+                               Round == Round.Three &&
+                               Players.WithoutJunked().Any(p => !p.State.PhaseThree.Completed);
 
     private void StartNextRound()
     {
-        Round = Round switch { Round.One => Round.Two, Round.Two => Round.Three, _ => Round.One };
+        Round = Round switch { Round.One => Round.Two, Round.Two => Round.Three, Round.Three => Round.One };
         Players.ShiftDealerToNext();
         Players.ResetPhaseCompletions(forNextRound: true);
         AddAnte();
@@ -245,11 +249,9 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
     {
         Players.ResetPhaseCompletions(forNextRound: false);
 
-        Dictionary<Player, int> playerCardsCount = Players.WithoutJunkedOut().ToDictionary(player => player, player => player.Hand.Count);
+        Dictionary<Player, int> playerCardsCount = Players.WithoutJunked().ToDictionary(player => player, player => player.Hand.Count);
 
-        // TODO: The player left of the dealer is always first to recieve new cards
-        // Do we really care for this rule about the Sabacc Shift?? (I mean, the deck is shuffled...)
-        foreach (var player in Players.WithoutJunkedOut())
+        foreach (var player in Players.WithoutJunked())
         {
             player.ShuffleHand();
             DiscardPile.AddCards(player.Hand);
@@ -376,7 +378,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         player.State.PhaseTwo.Completed = true;
         player.PlaceCredits(HandPot, credits);
 
-        foreach (var other in Players.WithoutJunkedOut().Where(p => !p.Equals(player)))
+        foreach (var other in Players.WithoutJunked().Where(p => !p.Equals(player)))
         {
             other.State.PhaseTwo.Completed = false;
         }
@@ -397,7 +399,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         player.State.PhaseTwo.Completed = true;
         player.PlaceCredits(HandPot, credits);
 
-        foreach (var other in Players.WithoutJunkedOut().Where(p => !p.Equals(player)))
+        foreach (var other in Players.WithoutJunked().Where(p => !p.Equals(player)))
         {
             other.State.PhaseTwo.Completed = false;
         }

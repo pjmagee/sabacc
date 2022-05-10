@@ -111,7 +111,7 @@ public class HandsFixture
         yield return new Card() { Value = 4 }; // circle
     }
 
-    public IEnumerable<Card> RuleOfTwo()
+    public IEnumerable<Card> RuleOfTwo1()
     {
         yield return new Card() { Value = -6 }; // Optional 5th card btw
 
@@ -120,5 +120,14 @@ public class HandsFixture
 
         yield return new Card() { Value = 5 };
         yield return new Card() { Value = 5 };
+    }
+
+    public IEnumerable<Card> RuleOfTwo2()
+    {
+        yield return new Card() { Value = 6 };
+        yield return new Card() { Value = -6 };
+
+        yield return new Card() { Value = 2 };
+        yield return new Card() { Value = -2 };
     }
 }

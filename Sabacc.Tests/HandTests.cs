@@ -15,9 +15,13 @@ public class HandTests : IClassFixture<HandsFixture>
     [Fact]
     public void Hand_Detects_RuleOfTwo()
     {
-        var hand = new Hand(_fixture.RuleOfTwo());
+        var hand = new Hand(_fixture.RuleOfTwo1());
         Assert.True(hand.IsRuleOfTwo());
-        Assert.Equal(HandType.RuleOfTwo, hand.HandType);
+        Assert.Equal(HandRank.RuleOfTwo, hand.HandRank);
+
+        hand = new Hand(_fixture.RuleOfTwo2());
+        Assert.True(hand.IsRuleOfTwo());
+        Assert.Equal(HandRank.RuleOfTwo, hand.HandRank);
     }
 
     [Fact]
@@ -25,7 +29,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.BanthasWild());
         Assert.True(hand.IsBanthasWild());
-        Assert.Equal(HandType.BanthasWild, hand.HandType);
+        Assert.Equal(HandRank.BanthasWild, hand.HandRank);
     }
 
     [Fact]
@@ -33,7 +37,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.StraightKhyron());
         Assert.True(hand.IsStraightKhyron());
-        Assert.Equal(HandType.StraightKhyron, hand.HandType);
+        Assert.Equal(HandRank.StraightKhyron, hand.HandRank);
     }
 
     [Fact]
@@ -41,11 +45,11 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.GeeWizz1());
         Assert.True(hand.IsGeeWhiz());
-        Assert.Equal(HandType.GeeWhizz, hand.HandType);
+        Assert.Equal(HandRank.GeeWhizz, hand.HandRank);
 
         hand = new Hand(_fixture.GeeWizz2());
         Assert.True(hand.IsGeeWhiz());
-        Assert.Equal(HandType.GeeWhizz, hand.HandType);
+        Assert.Equal(HandRank.GeeWhizz, hand.HandRank);
     }
 
     [Fact]
@@ -53,7 +57,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.Squadron());
         Assert.True(hand.IsSquadron());
-        Assert.Equal(HandType.Squadron, hand.HandType);
+        Assert.Equal(HandRank.Squadron, hand.HandRank);
     }
 
     [Fact]
@@ -61,7 +65,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.Rhylet());
         Assert.True(hand.IsRhylet());
-        Assert.Equal(HandType.Rhylet, hand.HandType);
+        Assert.Equal(HandRank.Rhylet, hand.HandRank);
     }
 
     [Fact]
@@ -69,7 +73,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.YeeHaa());
         Assert.True(hand.IsYeeHaa());
-        Assert.Equal(HandType.YeeHaa, hand.HandType);
+        Assert.Equal(HandRank.YeeHaa, hand.HandRank);
     }
 
     [Fact]
@@ -77,7 +81,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.PrimeSabacc());
         Assert.True(hand.IsPrimeSabacc());
-        Assert.Equal(HandType.PrimeSabacc, hand.HandType);
+        Assert.Equal(HandRank.PrimeSabacc, hand.HandRank);
     }
 
     [Fact]
@@ -85,7 +89,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.Fleet());
         Assert.True(hand.IsFleet());
-        Assert.Equal(HandType.Fleet, hand.HandType);
+        Assert.Equal(HandRank.Fleet, hand.HandRank);
     }
 
     [Fact]
@@ -93,7 +97,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.FullSabacc());
         Assert.True(hand.IsFullSabacc());
-        Assert.Equal(HandType.FullSabacc, hand.HandType);
+        Assert.Equal(HandRank.FullSabacc, hand.HandRank);
     }
 
     [Fact]
@@ -101,7 +105,7 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.PureSabacc());
         Assert.True(hand.IsPureSabacc());
-        Assert.Equal(HandType.PureSabacc, hand.HandType);
+        Assert.Equal(HandRank.PureSabacc, hand.HandRank);
     }
 
     [Fact]
@@ -109,10 +113,10 @@ public class HandTests : IClassFixture<HandsFixture>
     {
         var hand = new Hand(_fixture.Nulrhek1());
         Assert.True(hand.IsNulrhek());
-        Assert.Equal(HandType.Nulrhek, hand.HandType);
+        Assert.Equal(HandRank.Nulrhek, hand.HandRank);
 
         hand = new Hand(_fixture.Nulrhek2());
         Assert.True(hand.IsNulrhek());
-        Assert.Equal(HandType.Nulrhek, hand.HandType);
+        Assert.Equal(HandRank.Nulrhek, hand.HandRank);
     }
 }

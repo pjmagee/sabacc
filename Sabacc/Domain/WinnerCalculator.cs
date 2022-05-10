@@ -6,7 +6,7 @@ public class WinnerCalculator : IWinnerCalculator
     {
         bool winnerFound = false;
 
-        var groups = players.GroupBy(player => player.Hand.HandType);
+        var groups = players.GroupBy(player => player.Hand.HandRank);
 
         foreach (var group in groups.OrderBy(x => x.Key))
         {
@@ -22,12 +22,12 @@ public class WinnerCalculator : IWinnerCalculator
             }
         }
 
-        var handLookup = players.ToLookup(x => x.Hand.HandType, x => x);
+        var handLookup = players.ToLookup(x => x.Hand.HandRank, x => x);
 
-        if (!winnerFound && handLookup[HandType.Sabacc].Any())
+        if (!winnerFound && handLookup[HandRank.Sabacc].Any())
         {
             // 1. Win by Most Cards
-            var mostCards = handLookup[HandType.Sabacc]
+            var mostCards = handLookup[HandRank.Sabacc]
                 .GroupBy(p => p.Hand.Count)
                 .OrderByDescending(grp => grp.Key)
                 .First();
@@ -35,7 +35,7 @@ public class WinnerCalculator : IWinnerCalculator
             if (mostCards.Count() == 1)
             {
                 Player winner = mostCards.Single();
-                winner.State.PhaseThree.WinningHand = winner.Hand.HandType;
+                winner.State.PhaseThree.WinningHand = winner.Hand.HandRank;
                 winner.State.PhaseThree.WonRound = true;
                 winnerFound = true;
             }
@@ -43,7 +43,7 @@ public class WinnerCalculator : IWinnerCalculator
             if (!winnerFound)
             {
                 // 2. Win by highest total of all positive cards
-                var highestTotal = handLookup[HandType.Sabacc]
+                var highestTotal = handLookup[HandRank.Sabacc]
                     .GroupBy(x => x.Hand.Where(c => c.Value > 0).Sum(c => c.Value))
                     .OrderByDescending(grp => grp.Key)
                     .First();
@@ -51,7 +51,7 @@ public class WinnerCalculator : IWinnerCalculator
                 if (highestTotal.Count() == 1)
                 {
                     Player winner = highestTotal.Single();
-                    winner.State.PhaseThree.WinningHand = winner.Hand.HandType;
+                    winner.State.PhaseThree.WinningHand = winner.Hand.HandRank;
                     winner.State.PhaseThree.WonRound = true;
                     winnerFound = true;
                 }
@@ -59,7 +59,7 @@ public class WinnerCalculator : IWinnerCalculator
                 if (!winnerFound)
                 {
                     // 3. Win by highest single positive card
-                    var highestSinglePositive = handLookup[HandType.Sabacc]
+                    var highestSinglePositive = handLookup[HandRank.Sabacc]
                         .GroupBy(x => x.Hand.Where(c => c.Value > 0).Max(c => c.Value))
                         .OrderByDescending(grp => grp.Key)
                         .First();
@@ -67,7 +67,7 @@ public class WinnerCalculator : IWinnerCalculator
                     if (highestSinglePositive.Count() == 1)
                     {
                         Player winner = highestSinglePositive.Single();
-                        winner.State.PhaseThree.WinningHand = winner.Hand.HandType;
+                        winner.State.PhaseThree.WinningHand = winner.Hand.HandRank;
                         winner.State.PhaseThree.WonRound = true;
                         winnerFound = true;
                     }
@@ -75,9 +75,9 @@ public class WinnerCalculator : IWinnerCalculator
             }
         }
 
-        if (!winnerFound && handLookup[HandType.Nulrhek].Any())
+        if (!winnerFound && handLookup[HandRank.Nulrhek].Any())
         {
-            var closestToZero = handLookup[HandType.Nulrhek]
+            var closestToZero = handLookup[HandRank.Nulrhek]
                 .GroupBy(x => Math.Abs(0 - x.Hand.Sum))
                 .OrderBy(grp => grp.Key)
                 .First();
@@ -85,29 +85,28 @@ public class WinnerCalculator : IWinnerCalculator
             if (closestToZero.Count() == 1)
             {
                 Player player = closestToZero.First();
-                player.State.PhaseThree.WinningHand = player.Hand.HandType;
+                player.State.PhaseThree.WinningHand = player.Hand.HandRank;
                 player.State.PhaseThree.WonRound = true;
+                player.State.PhaseThree.NulrhekRank = NulrhekRank.ClosestToZero;
                 winnerFound = true;
             }
 
-            // Basically, if they tie...
             if (!winnerFound)
             {
-                // 1. Positive closest to 0
-                var closestToZeroPositive = handLookup[HandType.Nulrhek]
-                    .Where(x => x.Hand.Sum > 0)
-                    .GroupBy(x => x.Hand.Sum)
+                var positiveScore = handLookup[HandRank.Nulrhek]
+                    .GroupBy(x => x.Hand.Where(c => c.Value > 0).Sum(c => c.Value))
                     .OrderByDescending(grp => grp.Key)
-                    .LastOrDefault();
+                    .FirstOrDefault();
 
-                if (closestToZeroPositive?.Count() == 1)
+                if (positiveScore?.Count() == 1)
                 {
-                    Player player = closestToZeroPositive.First();
+                    Player player = positiveScore.First();
 
                     if (player.Hand.Sum > 0)
                     {
-                        player.State.PhaseThree.WinningHand = player.Hand.HandType;
+                        player.State.PhaseThree.WinningHand = player.Hand.HandRank;
                         player.State.PhaseThree.WonRound = true;
+                        player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScore;
                         winnerFound = true;
                     }
                 }
@@ -115,33 +114,60 @@ public class WinnerCalculator : IWinnerCalculator
 
             if (!winnerFound)
             {
-                // 2. Positive score with most cards closest to 0
-                var mostCards = handLookup[HandType.Nulrhek]
-                    .Where(x => x.Hand.Sum > 0)
-                    .GroupBy(x => x.Hand.Count)
+                var positiveScoreWithMostCards = handLookup[HandRank.Nulrhek]
+                    .GroupBy(x => x.Hand.Count(c => c.Value > 0))
                     .OrderByDescending(x => x.Key)
-                    .First();
+                    .FirstOrDefault();
 
-                if (mostCards.Count() == 1)
+                if (positiveScoreWithMostCards?.Count() == 1)
                 {
-                    Player player = mostCards.First();
-                    player.State.PhaseThree.WinningHand = player.Hand.HandType;
+                    Player player = positiveScoreWithMostCards.First();
+                    player.State.PhaseThree.WinningHand = player.Hand.HandRank;
                     player.State.PhaseThree.WonRound = true;
+                    player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScoreWithMostCards;
                     winnerFound = true;
                 }
             }
 
             if (!winnerFound)
             {
-                // 3. Positive score with highest total value of all positive cards, closest to 0
+                var positiveScoreWithHighestTotalValueOfAllPositiveCards
+                    = handLookup[HandRank.Nulrhek]
+                    .GroupBy(x => x.Hand.Where(c => c.Value > 0).Sum(c => c.Value))
+                    .OrderByDescending(x => x.Key)
+                    .FirstOrDefault();
 
+                if (positiveScoreWithHighestTotalValueOfAllPositiveCards?.Count() == 1)
+                {
+                    Player player = positiveScoreWithHighestTotalValueOfAllPositiveCards.First();
+                    player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                    player.State.PhaseThree.WonRound = true;
+                    player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScoreWithHighestTotalOfAllPositiveCards;
+                    winnerFound = true;
+                }
+            }
 
+            if (!winnerFound)
+            {
+                var positiveScoreWithHighestSinglePositiveCardValue
+                    = handLookup[HandRank.Nulrhek]
+                        .GroupBy(x => x.Hand.Max(c => c.Value > 0))
+                        .OrderByDescending(x => x.Key)
+                        .FirstOrDefault();
+
+                if (positiveScoreWithHighestSinglePositiveCardValue?.Count() == 1)
+                {
+                    Player player = positiveScoreWithHighestSinglePositiveCardValue.First();
+                    player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                    player.State.PhaseThree.WonRound = true;
+                    player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScoreWithHighestSinglePositiveCardValue;
+                    winnerFound = true;
+                }
             }
         }
 
         if (winnerFound)
             return players.Single(p => p.State.PhaseThree.WonRound);
-
 
         throw new NotImplementedException("Need to figure out this next bit...");
     }

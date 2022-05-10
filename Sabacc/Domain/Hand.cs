@@ -12,25 +12,25 @@ public class Hand : List<Card>
 
     }
 
-    public HandType HandType
+    public HandRank HandRank
     {
         get
         {
-            if (IsPureSabacc()) return HandType.PureSabacc;
-            if (IsFullSabacc()) return HandType.FullSabacc;
-            if (IsFleet()) return HandType.Fleet;
-            if (IsPrimeSabacc()) return HandType.PrimeSabacc;
-            if (IsYeeHaa()) return HandType.YeeHaa;
-            if (IsRhylet()) return HandType.Rhylet;
-            if (IsSquadron()) return HandType.Squadron;
-            if (IsGeeWhiz()) return HandType.GeeWhizz;
-            if (IsStraightKhyron()) return HandType.StraightKhyron;
-            if (IsBanthasWild()) return HandType.BanthasWild;
-            if (IsRuleOfTwo()) return HandType.RuleOfTwo;
-            if (IsSabacc()) return HandType.Sabacc;
-            if (IsNulrhek()) return HandType.Nulrhek;
+            if (IsPureSabacc()) return HandRank.PureSabacc;
+            if (IsFullSabacc()) return HandRank.FullSabacc;
+            if (IsFleet()) return HandRank.Fleet;
+            if (IsPrimeSabacc()) return HandRank.PrimeSabacc;
+            if (IsYeeHaa()) return HandRank.YeeHaa;
+            if (IsRhylet()) return HandRank.Rhylet;
+            if (IsSquadron()) return HandRank.Squadron;
+            if (IsGeeWhiz()) return HandRank.GeeWhizz;
+            if (IsStraightKhyron()) return HandRank.StraightKhyron;
+            if (IsBanthasWild()) return HandRank.BanthasWild;
+            if (IsRuleOfTwo()) return HandRank.RuleOfTwo;
+            if (IsSabacc()) return HandRank.Sabacc;
+            if (IsNulrhek()) return HandRank.Nulrhek;
 
-            throw new InvalidOperationException("Unhandled HandType");
+            throw new InvalidOperationException("Unhandled HandRank");
         }
     }
 
@@ -42,9 +42,11 @@ public class Hand : List<Card>
 
     public bool IsRuleOfTwo()
     {
-        return Count == 4 || Count == 5 && Sum == 0 && this
-            .GroupBy(c => c.Value)
-            .Count(pair => pair.Count() == 2) == 2;
+        var isSabacc = Count == 4 || Count == 5 && Sum == 0;
+        var group = this.GroupBy(c => Math.Abs(c.Value));
+
+        return isSabacc && group.Count(pair => pair.Count() == 2) == 2
+                        && !group.First().Key.Equals(group.Last().Key);
     }
 
     public bool IsBanthasWild()
@@ -105,9 +107,9 @@ public class Hand : List<Card>
 
     public bool IsSquadron()
     {
-        return Count == 4 && Sum == 0 &&
-               this.Where(c => c.Value > 0).GroupBy(c => c.Value).Count(x => x.Count() == 2) == 1 &&
-               this.Where(c => c.Value < 0).GroupBy(c => c.Value).Count(x => x.Count() == 2) == 1;
+        var isSabacc = Count == 4 && Sum == 0;
+        var groups  = this.GroupBy(c => c.Value);
+        return isSabacc && groups.Count() == 2 && Math.Abs(groups.First().Key).Equals(Math.Abs(groups.Last().Key));
     }
 
     public bool IsGeeWhiz()

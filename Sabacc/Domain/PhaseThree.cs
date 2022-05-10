@@ -6,9 +6,9 @@ public class PhaseThree
     public DieSides[]? DiceRolled { get; set; }
     public bool Completed { get; set; }
     public bool WonRound { get; set; }
-    public bool WonSabacc => WinningHand != null && WinningHand != HandType.Nulrhek;
-
-    public HandType? WinningHand { get; set; }
+    public bool WonSabacc => WinningHand != null && WinningHand != HandRank.Nulrhek;
+    public NulrhekRank? NulrhekRank { get; set; }
+    public HandRank? WinningHand { get; set; }
 
     public void Reset()
     {
