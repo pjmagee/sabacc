@@ -9,13 +9,10 @@ using Sabacc.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorPages();
+
 builder.Services
-    .AddServerSideBlazor(options =>
-    {
-        options.DetailedErrors = true;
-    })
+    .AddServerSideBlazor(options => { options.DetailedErrors = true; })
     .AddHubOptions(options =>
     {
         options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
@@ -27,34 +24,38 @@ builder.Services
         options.StreamBufferCapacity = 10;
     });
 
-builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddBlazoredSessionStorage();
-builder.Services.AddResponseCompression(options =>
-{
-    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/octet-stream" });
-});
-builder.Services.AddScoped<BrowserStorage>();
+builder.Services
+    .AddBlazoredLocalStorage()
+    .AddBlazoredSessionStorage()
+    .AddResponseCompression(options =>
+    {
+        options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/octet-stream" });
+    });
 
-builder.Services.AddSingleton<SabaccSessionFactory>();
-builder.Services.AddSingleton<SabaccSessionService>();
-builder.Services.AddSingleton(provider => provider);
-builder.Services.AddTransient<ClassicSabaccCloudCityRules>();
-builder.Services.AddTransient<IWinnerCalculator, WinnerCalculator>();
-builder.Services.AddTransient<CorellianSpikeBlackSpireOutpostRules>();
-
+builder.Services
+    .AddScoped<BrowserStorage>()
+    .AddSingleton<SabaccSessionFactory>()
+    .AddSingleton<SabaccSessionService>()
+    .AddSingleton(provider => provider)
+    .AddTransient<ClassicSabaccCloudCityRules>()
+    .AddTransient<IWinnerCalculator, WinnerCalculator>()
+    .AddTransient<CorellianSpikeBlackSpireOutpostRules>();
 
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    // app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseRouting();
+// app.UseHttpsRedirection();
+app
+    .UseStaticFiles()
+    .UseRouting();
+
 app.MapBlazorHub();
 app.MapHub<PlayerNotificationHub>("/update");
 app.MapFallbackToPage("/_Host");
+
 app.Run();

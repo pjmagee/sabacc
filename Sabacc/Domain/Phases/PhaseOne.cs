@@ -36,11 +36,3 @@ public class PhaseOne
                                      !Gain1KeepCardId.HasValue &&
                                      !Gain1DiscardCardId.HasValue;
 }
-
-public enum PhaseOneChoice
-{
-    Stand,
-    Gain1,
-    Gain2,
-    Swap
-}

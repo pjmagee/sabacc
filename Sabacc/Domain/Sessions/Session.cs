@@ -7,11 +7,13 @@ namespace Sabacc.Domain;
 
 public class Session
 {
-    public SabaccVariantType Varianet { get; set; }
+    public SabaccVariantType Variant { get; set; }
     public Guid Id { get; set; }
     public List<Player> Players { get; set; }
+    
     public List<Deck> Deck { get; } = new();
     public List<Pot> Pots { get; set; }
+    
     public SessionStatus Status { get; set; } = SessionStatus.Open;
 
     public Session()
