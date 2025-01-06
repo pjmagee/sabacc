@@ -5,6 +5,7 @@ using Sabacc.Domain;
 using Sabacc.Hubs;
 using Xunit;
 using Moq;
+using Sabacc.Domain.SabaccVariants;
 
 namespace Sabacc.Tests
 {

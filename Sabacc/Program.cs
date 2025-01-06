@@ -4,38 +4,29 @@ using Blazored.SessionStorage;
 using Microsoft.AspNetCore.ResponseCompression;
 
 using Sabacc.Domain;
+using Sabacc.Domain.SabaccVariants;
 using Sabacc.Hubs;
+using Sabacc.Pages;
 using Sabacc.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRazorPages();
-
 builder.Services
-    .AddServerSideBlazor(options => { options.DetailedErrors = true; })
-    .AddHubOptions(options =>
-    {
-        options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
-        options.EnableDetailedErrors = false;
-        options.HandshakeTimeout = TimeSpan.FromSeconds(15);
-        options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-        options.MaximumParallelInvocationsPerClient = 1;
-        options.MaximumReceiveMessageSize = 32 * 1024;
-        options.StreamBufferCapacity = 10;
-    });
+    .AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services.AddSignalR();
+
 
 builder.Services
     .AddBlazoredLocalStorage()
     .AddBlazoredSessionStorage()
-    .AddResponseCompression(options =>
-    {
-        options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/octet-stream" });
-    });
+    .AddResponseCompression(options => options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/octet-stream"]));
 
 builder.Services
     .AddScoped<BrowserStorage>()
     .AddSingleton<SabaccSessionFactory>()
-    .AddSingleton<SabaccSessionService>()
+    .AddSingleton<SessionService>()
     .AddSingleton(provider => provider)
     .AddTransient<ClassicSabaccCloudCityRules>()
     .AddTransient<IWinnerCalculator, WinnerCalculator>()
@@ -43,19 +34,24 @@ builder.Services
 
 var app = builder.Build();
 
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
-    // app.UseHsts();
+    app.UseResponseCompression();
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
 }
 
-// app.UseHttpsRedirection();
-app
-    .UseStaticFiles()
-    .UseRouting();
+app.UseHttpsRedirection();
+app.UseAntiforgery();
 
-app.MapBlazorHub();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+app.MapBlazorHub(options =>
+{
+    options.CloseOnAuthenticationExpiration = true;
+}).WithOrder(-1);
 app.MapHub<PlayerNotificationHub>("/update");
-app.MapFallbackToPage("/_Host");
 
 app.Run();

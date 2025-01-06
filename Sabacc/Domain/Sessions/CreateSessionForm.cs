@@ -10,7 +10,7 @@ public class CreateSessionForm
 
     [Required]
     [MaxLength(20)]
-    public string PlayerName { get; set; }
+    public string? PlayerName { get; set; }
 
     public SabaccVariantType SabaccVariant { get; set; }
 }

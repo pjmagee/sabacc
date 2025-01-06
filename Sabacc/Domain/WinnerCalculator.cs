@@ -6,7 +6,7 @@ public class WinnerCalculator : IWinnerCalculator
     {
         bool winnerFound = false;
 
-        var groups = players.GroupBy(player => player.Hand.HandRank);
+        var groups = players.GroupBy(player => player.Hand.Rank);
 
         foreach (var group in groups.OrderBy(x => x.Key))
         {
@@ -22,7 +22,7 @@ public class WinnerCalculator : IWinnerCalculator
             }
         }
 
-        var handLookup = players.ToLookup(x => x.Hand.HandRank, x => x);
+        var handLookup = players.ToLookup(x => x.Hand.Rank, x => x);
 
         if (!winnerFound && handLookup[HandRank.Sabacc].Any())
         {
@@ -35,7 +35,7 @@ public class WinnerCalculator : IWinnerCalculator
             if (mostCards.Count() == 1)
             {
                 Player winner = mostCards.Single();
-                winner.State.PhaseThree.WinningHand = winner.Hand.HandRank;
+                winner.State.PhaseThree.WinningHand = winner.Hand.Rank;
                 winner.State.PhaseThree.WonRound = true;
                 winnerFound = true;
             }
@@ -51,7 +51,7 @@ public class WinnerCalculator : IWinnerCalculator
                 if (highestTotal.Count() == 1)
                 {
                     Player winner = highestTotal.Single();
-                    winner.State.PhaseThree.WinningHand = winner.Hand.HandRank;
+                    winner.State.PhaseThree.WinningHand = winner.Hand.Rank;
                     winner.State.PhaseThree.WonRound = true;
                     winnerFound = true;
                 }
@@ -67,7 +67,7 @@ public class WinnerCalculator : IWinnerCalculator
                     if (highestSinglePositive.Count() == 1)
                     {
                         Player winner = highestSinglePositive.Single();
-                        winner.State.PhaseThree.WinningHand = winner.Hand.HandRank;
+                        winner.State.PhaseThree.WinningHand = winner.Hand.Rank;
                         winner.State.PhaseThree.WonRound = true;
                         winnerFound = true;
                     }
@@ -85,7 +85,7 @@ public class WinnerCalculator : IWinnerCalculator
             if (closestToZero.Count() == 1)
             {
                 Player player = closestToZero.First();
-                player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                player.State.PhaseThree.WinningHand = player.Hand.Rank;
                 player.State.PhaseThree.WonRound = true;
                 player.State.PhaseThree.NulrhekRank = NulrhekRank.ClosestToZero;
                 winnerFound = true;
@@ -104,7 +104,7 @@ public class WinnerCalculator : IWinnerCalculator
 
                     if (player.Hand.Sum > 0)
                     {
-                        player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                        player.State.PhaseThree.WinningHand = player.Hand.Rank;
                         player.State.PhaseThree.WonRound = true;
                         player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScore;
                         winnerFound = true;
@@ -122,7 +122,7 @@ public class WinnerCalculator : IWinnerCalculator
                 if (positiveScoreWithMostCards?.Count() == 1)
                 {
                     Player player = positiveScoreWithMostCards.First();
-                    player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                    player.State.PhaseThree.WinningHand = player.Hand.Rank;
                     player.State.PhaseThree.WonRound = true;
                     player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScoreWithMostCards;
                     winnerFound = true;
@@ -140,7 +140,7 @@ public class WinnerCalculator : IWinnerCalculator
                 if (positiveScoreWithHighestTotalValueOfAllPositiveCards?.Count() == 1)
                 {
                     Player player = positiveScoreWithHighestTotalValueOfAllPositiveCards.First();
-                    player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                    player.State.PhaseThree.WinningHand = player.Hand.Rank;
                     player.State.PhaseThree.WonRound = true;
                     player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScoreWithHighestTotalOfAllPositiveCards;
                     winnerFound = true;
@@ -158,7 +158,7 @@ public class WinnerCalculator : IWinnerCalculator
                 if (positiveScoreWithHighestSinglePositiveCardValue?.Count() == 1)
                 {
                     Player player = positiveScoreWithHighestSinglePositiveCardValue.First();
-                    player.State.PhaseThree.WinningHand = player.Hand.HandRank;
+                    player.State.PhaseThree.WinningHand = player.Hand.Rank;
                     player.State.PhaseThree.WonRound = true;
                     player.State.PhaseThree.NulrhekRank = NulrhekRank.PositiveScoreWithHighestSinglePositiveCardValue;
                     winnerFound = true;

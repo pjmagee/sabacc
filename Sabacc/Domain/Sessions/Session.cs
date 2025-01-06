@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-using Sabacc.Annotations;
-
 namespace Sabacc.Domain;
 
 public class Session
@@ -19,7 +17,7 @@ public class Session
     public Session()
     {
         Id = Guid.NewGuid();
-        Pots = new List<Pot>() { new(PotType.TrueSabacc), new(PotType.TheHand) };
+        Pots = [new(PotType.TrueSabacc), new(PotType.TheHand),];
         Players = new List<Player>();
     }
 }

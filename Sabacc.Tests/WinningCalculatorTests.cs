@@ -28,7 +28,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.PureSabacc, winner.Hand.HandRank);
+        Assert.Equal(HandRank.PureSabacc, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -44,7 +44,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.FullSabacc, winner.Hand.HandRank);
+        Assert.Equal(HandRank.FullSabacc, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -60,7 +60,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.Fleet, winner.Hand.HandRank);
+        Assert.Equal(HandRank.Fleet, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -76,7 +76,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.PrimeSabacc, winner.Hand.HandRank);
+        Assert.Equal(HandRank.PrimeSabacc, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -92,7 +92,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.YeeHaa, winner.Hand.HandRank);
+        Assert.Equal(HandRank.YeeHaa, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -108,7 +108,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.Rhylet, winner.Hand.HandRank);
+        Assert.Equal(HandRank.Rhylet, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -124,7 +124,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.Squadron, winner.Hand.HandRank);
+        Assert.Equal(HandRank.Squadron, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -140,7 +140,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.GeeWhizz, winner.Hand.HandRank);
+        Assert.Equal(HandRank.GeeWhizz, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -156,7 +156,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.StraightKhyron, winner.Hand.HandRank);
+        Assert.Equal(HandRank.StraightKhyron, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -172,7 +172,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.BanthasWild, winner.Hand.HandRank);
+        Assert.Equal(HandRank.BanthasWild, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -188,7 +188,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.BanthasWild, winner.Hand.HandRank);
+        Assert.Equal(HandRank.BanthasWild, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -204,7 +204,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.Nulrhek, winner.Hand.HandRank);
+        Assert.Equal(HandRank.Nulrhek, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 
@@ -220,7 +220,7 @@ public class WinningCalculatorTests : IClassFixture<HandsFixture>
 
         var winner = _winnerCalculator.Calculate(players);
 
-        Assert.Equal(HandRank.Nulrhek, winner.Hand.HandRank);
+        Assert.Equal(HandRank.Nulrhek, winner.Hand.Rank);
         Assert.Equal(players.Last.Value, winner);
     }
 }

@@ -10,7 +10,9 @@ public class ClassicSabaccCloudCityRules : ISabaccSession
 {
     public Guid Id { get; }
     public int Slots { get; }
+
     public int Round { get; }
+
     public IImmutableList<Guid> PlayerIds { get; }
     public SabaccVariantType VariantType { get; }
     public SessionStatus Status { get; }

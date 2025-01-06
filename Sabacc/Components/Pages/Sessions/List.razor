@@ -1,0 +1,101 @@
+﻿@page "/sessions"
+@page "/"
+@using Sabacc.Domain
+@using System.ComponentModel.DataAnnotations
+@inject NavigationManager _navigationManager
+@inject SessionService SessionService
+@inject BrowserStorage _browserStorage
+
+<PageTitle>Sessions</PageTitle>
+
+<h1>Sessions</h1>
+
+@if (_sessions is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Status</th>
+                <th>Players</th>
+                <th>Variant</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var session in _sessions)
+            {
+                <tr>
+                    <td>@session.SessionId</td>
+                    <td>@session.SessionStatus</td>
+                    <td>@session.Players / @session.Slots</td>
+                    <td>@session.VariantType</td>
+                    <td>
+                        @if (session.SessionStatus == SessionStatus.Open)
+                        {
+                            var form = _forms[session.SessionId];
+
+                            <EditForm Model="form" OnValidSubmit="() => Join(session.SessionId)">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+                                <InputText @bind-Value="form.Name"  />
+                                <button type="submit" class="btn btn-primary ms-1">Join</button>
+                            </EditForm>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private IEnumerable<SessionListItem>? _sessions = null;
+    private Dictionary<Guid, JoinSessionForm> _forms;
+
+    public class JoinSessionForm
+    {
+        public Guid SessionId { get; set; }
+
+        [Required(AllowEmptyStrings = false)]
+        [MinLength(3), MaxLength(30)]
+        public string? Name { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sessions = await SessionService.GetSessions();
+        _forms = _sessions.ToDictionary(x => x.SessionId, x => new JoinSessionForm
+            {
+                SessionId = x.SessionId
+            }
+        );
+    }
+
+    private async Task Join(Guid sessionId)
+    {
+        JoinSessionForm form = _forms[sessionId];
+        ISabaccSession? session = SessionService.Sessions.Find(s => s.Id == form.SessionId);
+
+        if (session != null)
+        {
+            var playerId = await _browserStorage.GetPlayerId();
+
+            if (session.PlayerIds.Contains(playerId))
+            {
+                _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+            }
+            else
+            {
+                await session.JoinSession(playerId, form.Name);
+                _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+            }
+        }
+    }
+
+}

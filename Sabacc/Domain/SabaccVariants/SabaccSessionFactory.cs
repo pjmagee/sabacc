@@ -1,20 +1,15 @@
-﻿namespace Sabacc.Domain;
+﻿using Sabacc.Domain.SabaccVariants;
 
-public class SabaccSessionFactory
+namespace Sabacc.Domain;
+
+public class SabaccSessionFactory(IServiceProvider serviceProvider)
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public SabaccSessionFactory(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public ISabaccSession Create(CreateSessionForm sessionForm)
     {
         var session = (ISabaccSession) (sessionForm.SabaccVariant switch
         {
-            SabaccVariantType.ClassicSabaccCloudCityRules => _serviceProvider.GetRequiredService<ClassicSabaccCloudCityRules>(),
-            SabaccVariantType.CorellianSpikeBlackSpireOutpostRules => _serviceProvider.GetRequiredService<CorellianSpikeBlackSpireOutpostRules>(),
+            SabaccVariantType.ClassicSabaccCloudCityRules => serviceProvider.GetRequiredService<ClassicSabaccCloudCityRules>(),
+            SabaccVariantType.CorellianSpikeBlackSpireOutpostRules => serviceProvider.GetRequiredService<CorellianSpikeBlackSpireOutpostRules>(),
             _ => throw new NotSupportedException()
         });
 

@@ -1,0 +1,72 @@
+﻿@page "/sessions/create"
+@using Sabacc.Domain
+@inject NavigationManager _navigationManager
+@inject SessionService SessionService
+@inject BrowserStorage _browserStorage
+
+<PageTitle>Create</PageTitle>
+
+<h1>Create Session</h1>
+
+<EditForm Model="Model" OnValidSubmit="Submit" FormName="create">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row mb-3">
+        <div class="mb-3 col-1">
+            <label class="form-label">Your name</label>
+            <InputText class="form-control" id="name" @bind-Value="Model!.PlayerName" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="mb-3 col-1">
+            <label class="form-label">
+                Total players
+            </label>
+            <InputSelect class="form-control" id="players" @bind-Value="Model.Slots">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="mb-3 col-4">
+            <label class="form-label">
+                    Variant
+                </label>
+                <InputSelect id="variant" @bind-Value="Model.SabaccVariant" TValue="SabaccVariantType" class="form-select">
+                    <option value="@SabaccVariantType.CorellianSpikeBlackSpireOutpostRules">Corellian Spike (Blackspire Outpost rules)</option>
+                    <option value="@SabaccVariantType.ClassicSabaccCloudCityRules" disabled="disabled">Classic Sabacc (Cloud city rules)</option>
+                </InputSelect>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+
+    [SupplyParameterFromForm]
+    private CreateSessionForm? Model { get; set; } = new();
+
+    private Guid? playerId;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new CreateSessionForm();
+    }
+
+    private async Task Submit()
+    {
+        playerId = await _browserStorage.GetPlayerId();
+        var session = await SessionService.Create(playerId!.Value, Model!);
+        _navigationManager.NavigateTo($"/sessions/{session.Id}/player");
+    }
+}

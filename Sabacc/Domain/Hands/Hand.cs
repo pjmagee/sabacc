@@ -12,7 +12,7 @@ public class Hand : List<Card>
 
     }
 
-    public HandRank HandRank
+    public HandRank Rank
     {
         get
         {

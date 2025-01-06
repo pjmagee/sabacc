@@ -1,16 +1,14 @@
 ﻿using System.Collections.Immutable;
-
 using Microsoft.AspNetCore.SignalR;
-
 using Sabacc.Hubs;
 
-namespace Sabacc.Domain;
+namespace Sabacc.Domain.SabaccVariants;
 
 public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 {
-    private readonly IHubContext<PlayerNotificationHub> _playerNotifier;
-    private readonly IWinnerCalculator _winnerCalculator;
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    readonly IHubContext<PlayerNotificationHub> _playerNotifier;
+    readonly IWinnerCalculator _winnerCalculator;
+    readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public Player? CurrentPlayer => Players.CurrentTurn?.ValueRef;
     public Player? CurrentDealer => Players.CurrentDealer?.ValueRef;
@@ -68,7 +66,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         await NotifyAsync().ConfigureAwait(false);
     }
 
-    private async Task NotifyAsync() => await _playerNotifier.Clients.All.SendAsync(PlayerNotificationHub.Method, Id);
+    async Task NotifyAsync() => await _playerNotifier.Clients.All.SendAsync(PlayerNotificationHub.Method, Id);
 
     public async Task LeaveSession(Guid playerId)
     {
@@ -80,7 +78,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         await NotifyAsync().ConfigureAwait(false);
     }
 
-    private PlayerState GetNextState(Player player)
+    PlayerState GetNextState(Player player)
     {
         player.State.CanPerformAction = player.Equals(CurrentPlayer);
 
@@ -147,7 +145,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
-    private List<DeckView> GetDeckViews()
+    List<DeckView> GetDeckViews()
     {
         return new List<DeckView>(new[]
         {
@@ -184,7 +182,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         await NotifyAsync().ConfigureAwait(false);
     }
 
-    private void HandlePhaseThree(Player player, PlayerAction action)
+    void HandlePhaseThree(Player player, PlayerAction action)
     {
         if (action.IsDiceRoll()) HandleDiceRoll(player);
         else if (action.IsClaim()) HandleClaim(player);
@@ -206,13 +204,13 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
 
     public bool IsSabaccShift => Dice.IsSabaccShift() && Players.WithoutJunked().All(p => p.PhaseThreeCompleted());
 
-    private void HandleReady(Player player)
+    void HandleReady(Player player)
     {
         player.State.PhaseThree.Choice = PhaseThreeChoice.Ready;
         player.State.PhaseThree.Completed = true;
     }
 
-    private void HandleClaim(Player player)
+    void HandleClaim(Player player)
     {
         player.State.PhaseThree.Choice = PhaseThreeChoice.Claim;
         player.TakeCredits(HandPot);
@@ -225,7 +223,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         player.State.PhaseThree.Completed = true;
     }
 
-    private void HandleDiceRoll(Player player)
+    void HandleDiceRoll(Player player)
     {
         Dice.Roll();
 
@@ -233,11 +231,11 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         player.State.PhaseThree.DiceRolled = Dice.Sides!.Select(x => x).ToArray();
     }
 
-    private bool IsShowdown => !Dice.IsSabaccShift() &&
-                               Round == Round.Three &&
-                               Players.WithoutJunked().Any(p => !p.State.PhaseThree.Completed);
+    bool IsShowdown => !Dice.IsSabaccShift() &&
+                       Round == Round.Three &&
+                       Players.WithoutJunked().Any(p => !p.State.PhaseThree.Completed);
 
-    private void StartNextRound()
+    void StartNextRound()
     {
         Round = Round switch { Round.One => Round.Two, Round.Two => Round.Three, Round.Three => Round.One };
         Players.ShiftDealerToNext();
@@ -245,7 +243,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         AddAnte();
     }
 
-    private void StartSabaccShift()
+    void StartSabaccShift()
     {
         Players.ResetPhaseCompletions(forNextRound: false);
 
@@ -269,7 +267,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
-    private Card TakeTop()
+    Card TakeTop()
     {
         if (MainDeck.ViewTop() is null)
         {
@@ -281,9 +279,9 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         return MainDeck.TakeTop(1).First();
     }
 
-    private void CalculateWinner() => _winnerCalculator.Calculate(Players);
+    void CalculateWinner() => _winnerCalculator.Calculate(Players);
 
-    private void HandlePhaseOne(Player player, PlayerAction action)
+    void HandlePhaseOne(Player player, PlayerAction action)
     {
         if (action.IsStand())
         {
@@ -341,7 +339,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         SetNextTurn();
     }
 
-    private void HandlePhaseTwo(Player player, PlayerAction action)
+    void HandlePhaseTwo(Player player, PlayerAction action)
     {
         switch (action.PhaseTwo!.Choice)
         {
@@ -365,13 +363,13 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         SetNextTurn();
     }
 
-    private void HandleCheck(Player player)
+    void HandleCheck(Player player)
     {
         player.State.PhaseTwo.Choice = PhaseTwoChoice.Check;
         player.State.PhaseTwo.Completed = true;
     }
 
-    private void HandleBet(Player player, int credits)
+    void HandleBet(Player player, int credits)
     {
         player.State.PhaseTwo.Choice = PhaseTwoChoice.Bet;
         player.State.PhaseTwo.Credits = credits;
@@ -384,7 +382,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
-    private void HandleJunk(Player player)
+    void HandleJunk(Player player)
     {
         player.ShuffleHand();
         DiscardPile.AddCards(player.Hand);
@@ -392,7 +390,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         player.State.JunkedOut = true;
     }
 
-    private void HandleRaise(Player player, int credits)
+    void HandleRaise(Player player, int credits)
     {
         player.State.PhaseTwo.Choice = PhaseTwoChoice.Raise;
         player.State.PhaseTwo.Credits = credits;
@@ -405,7 +403,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
-    private void HandleCall(Player player)
+    void HandleCall(Player player)
     {
         int match = HandPot.Highest.Values.Max();
 
@@ -415,7 +413,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         player.PlaceCredits(HandPot, match);
     }
 
-    private void SetNextTurn()
+    void SetNextTurn()
     {
         if (Players.InPhase1())
         {
@@ -433,7 +431,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
-    private void Start()
+    void Start()
     {
         Status = SessionStatus.Started;
         CreateDeck();
@@ -444,7 +442,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         Round = Round.One;
     }
 
-    private void DealCards()
+    void DealCards()
     {
         LinkedListNode<Player> player = Players.CurrentDealer.Next!;
 
@@ -461,7 +459,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         DiscardPile.AddCards(MainDeck.TakeTop());
     }
 
-    private void AddAnte()
+    void AddAnte()
     {
         foreach (var player in Players)
         {
@@ -470,7 +468,7 @@ public class CorellianSpikeBlackSpireOutpostRules : ISabaccSession
         }
     }
 
-    private void CreateDeck()
+    void CreateDeck()
     {
         var positives = new List<IEnumerable<Card>>()
         {
